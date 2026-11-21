@@ -283,35 +283,32 @@ async function netRoom(code){
     on(f){r.onPeers(ch=>{const l=ch.peers.filter(p=>p.kind!=='agent').map(p=>({id:p.peer,s:p.presence||{},me:p.sameTab}));const m=l.find(x=>x.me);if(m)myId=m.id;f(l);},e=>toast('Salle : '+e.code));},
     leave(){r.leave().catch(()=>{});}};
 }
-function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('Impossible de charger PeerJS (internet ?)'));document.head.appendChild(s);});}
-const PFX='cocktailrush-ebs-';
-async function netP2PHost(code){
-  await loadPeer();
+/* Relais MQTT public (WebSocket sécurisé) : marche en 4G/5G et Wi-Fi, sans connexion directe entre téléphones.
+   Chaque joueur publie son état en "retained" sur cocktailrush-ebs/v1/CODE/ID ; à la déconnexion, le "last will" l'efface. */
+const BROKER='wss://broker.emqx.io:8084/mqtt';
+function loadMqtt(){return new Promise((res,rej)=>{if(window.mqtt)return res();const s=document.createElement('script');s.src='https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('Impossible de charger le module réseau (internet ?)'));document.head.appendChild(s);});}
+async function netMqtt(code){
+  await loadMqtt();
   return new Promise((res,rej)=>{
-    const peer=new Peer(PFX+code);const conns={},states={};let cb=()=>{},t=null,opened=false;
-    const emit=()=>{clearTimeout(t);t=setTimeout(()=>{const arr=Object.entries(states).map(([id,s])=>({id,s}));for(const c of Object.values(conns))if(c.open)c.send({type:'all',arr});cb(JSON.parse(JSON.stringify(arr)).map(x=>({...x,me:x.id===peer.id})));},0);};
-    peer.on('open',id=>{opened=true;states[id]={};res({mode:'p2p',myId:id,set(p){Object.assign(states[id],JSON.parse(JSON.stringify(p)));emit();},on(f){cb=f;emit();},leave(){peer.destroy();}});});
-    peer.on('connection',c=>{conns[c.peer]=c;c.on('data',d=>{if(d&&d.type==='state'){states[c.peer]=d.s;emit();}});c.on('close',()=>{delete conns[c.peer];delete states[c.peer];emit();});});
-    peer.on('error',e=>{if(!opened)rej(e);else toast('Réseau : '+(e.type||e.message));});
-    peer.on('disconnected',()=>{try{peer.reconnect();}catch(_){}});
+    const id=Math.random().toString(36).slice(2,10),base='cocktailrush-ebs/v1/'+code+'/';
+    const mine={},states={};let cb=()=>{},t=null,done=false;
+    const c=mqtt.connect(BROKER,{clientId:'cr_'+id+'_'+Date.now().toString(36),clean:true,reconnectPeriod:1500,connectTimeout:8000,keepalive:15,will:{topic:base+id,payload:'',retain:true,qos:1}});
+    const view=()=>Object.entries(states).map(([k,s])=>({id:k,s:k===id?{...s,...mine}:s,me:k===id}));
+    const fire=()=>{clearTimeout(t);t=setTimeout(()=>cb(view()),0);};
+    const pub=()=>{if(c.connected)c.publish(base+id,JSON.stringify(mine),{retain:true,qos:1});};
+    const api={mode:'mqtt',myId:id,
+      set(p){Object.assign(mine,JSON.parse(JSON.stringify(p)));states[id]={...mine};pub();fire();},
+      on(f){cb=f;fire();},
+      leave(){try{c.publish(base+id,'',{retain:true,qos:1},()=>c.end(true));setTimeout(()=>c.end(true),800);}catch(_){}},
+      connected:()=>c.connected};
+    const to=setTimeout(()=>{if(!done){c.end(true);rej(new Error('Serveur de jeu injoignable. Vérifie ta connexion internet.'));}},10000);
+    c.on('connect',()=>{c.subscribe(base+'+',{qos:1});pub();if(!done){done=true;clearTimeout(to);res(api);}else toast('Reconnecté');});
+    c.on('offline',()=>{if(done)toast('Connexion perdue, reconnexion…');});
+    c.on('message',(topic,buf)=>{const k=topic.slice(base.length);if(k===id)return;const str=buf.toString();if(!str)delete states[k];else{try{states[k]=JSON.parse(str);}catch(_){}}fire();});
+    c.on('error',e=>{if(!done){done=true;clearTimeout(to);c.end(true);rej(new Error('Réseau : '+(e.message||e)));}});
   });
 }
-async function netP2PJoin(code){
-  await loadPeer();
-  return new Promise((res,rej)=>{
-    const peer=new Peer();let cb=()=>{},arr=[];const mine={};let ok=false;
-    const view=()=>arr.map(x=>({id:x.id,me:x.id===peer.id,s:x.id===peer.id?{...x.s,...mine}:x.s}));
-    peer.on('open',id=>{
-      const c=peer.connect(PFX+code,{reliable:true});
-      const to=setTimeout(()=>{if(!ok){peer.destroy();rej(new Error('Partie introuvable : vérifie le code'));}},9000);
-      c.on('open',()=>{ok=true;clearTimeout(to);c.send({type:'state',s:mine});
-        res({mode:'p2p',myId:id,set(p){Object.assign(mine,JSON.parse(JSON.stringify(p)));if(c.open)c.send({type:'state',s:mine});cb(view());},on(f){cb=f;f(view());},leave(){peer.destroy();}});});
-      c.on('data',d=>{if(d&&d.type==='all'){arr=d.arr;cb(view());}});
-      c.on('close',()=>{arr=[];cb([]);});
-    });
-    peer.on('error',e=>{if(!ok){peer.destroy();rej(new Error(e.type==='peer-unavailable'?'Partie introuvable : vérifie le code':(e.message||e.type)));}});
-  });
-}
+function waitHost(net,ms){return new Promise(res=>{let ok=false;net.on(l=>{if(!ok&&l.some(p=>p.s.role==='host')){ok=true;res(true);}});setTimeout(()=>res(ok),ms);});}
 const IN_CLAUDE=()=>!!(window.claude&&typeof window.claude.use==='function');
 
 /* ================= ÉTAT ================= */
@@ -356,8 +353,7 @@ const ROOMMSG='Le multijoueur n\'est pas dispo dans cette vue Claude. Ouvre la v
 async function create(){
   if(!saveName())return fail('Entre ton prénom d\'abord');busy(true);
   try{let code=code4(),net;
-    if(IN_CLAUDE())net=await netRoom(code);
-    else for(let k=0;k<3;k++){try{net=await netP2PHost(code);break;}catch(e){if(e.type==='unavailable-id'){code=code4();continue;}throw e;}}
+    net=IN_CLAUDE()?await netRoom(code):await netMqtt(code);
     S.net=net;S.isHost=true;S.code=code;S.G={phase:'lobby'};net.on(onPeers);net.set({name:NAME,role:'host',G:S.G});
   }catch(e){return fail(e.message==='ROOM_NULL'?ROOMMSG:('Impossible de créer la partie : '+(e.message||e)));}
   S.err='';render(true);
@@ -365,7 +361,9 @@ async function create(){
 async function join(){
   if(!saveName())return fail('Entre ton prénom d\'abord');
   const code=(document.getElementById('cd')?.value||'').trim().toUpperCase();if(code.length!==4)return fail('Le code fait 4 caractères');busy(true);
-  try{const net=IN_CLAUDE()?await netRoom(code):await netP2PJoin(code);S.net=net;S.isHost=false;S.code=code;net.on(onPeers);net.set({name:NAME,role:'player'});}
+  try{const net=IN_CLAUDE()?await netRoom(code):await netMqtt(code);
+    if(!IN_CLAUDE()&&!(await waitHost(net,6000))){net.leave();throw new Error('Aucune table ouverte avec le code '+code+'. Vérifie le code, et que l\'hôte a bien l\'écran de la table ouvert.');}
+    S.net=net;S.isHost=false;S.code=code;net.on(onPeers);net.set({name:NAME,role:'player'});}
   catch(e){return fail(e.message==='ROOM_NULL'?ROOMMSG:e.message||String(e));}
   S.err='';render(true);
 }
@@ -454,7 +452,7 @@ function vHome(){
   <div id="hmsg">${S.err?`<div class="banner">${esc(S.err)}</div>`:''}</div>
   <div class="panel small mut"><b style="color:var(--ink)">Règles</b><br>Tout s'écrit à la main : verre, glaçons, technique, ingrédients + dose, décoration. Français ou anglais, petites fautes tolérées, « cl » accepté, « top » = « fill ».<br>1 erreur par case fausse, par ingrédient oublié, en trop ou mal dosé. Moins d'erreurs d'abord, puis le plus rapide : 4·3·2·1 pts à 4 joueurs, +2 pour une carte parfaite.</div></div>`;
 }
-function vWait(){return topbar(null)+(S.seenHost?`<div class="banner">L'hôte a quitté la table.</div><button class="btn" onclick="quit()">Retour</button>`:`<div class="panel" style="text-align:center"><h2>On rejoint la table ${esc(S.code)}…</h2><p class="mut">En attente de l'hôte.</p></div>`);}
+function vWait(){return topbar(null)+(S.seenHost?`<div class="banner">L'hôte s'est déconnecté (écran verrouillé ?). Dès qu'il revient sur la page, la partie reprend.</div><button class="btn" onclick="quit()">Quitter la table</button>`:`<div class="panel" style="text-align:center"><h2>On rejoint la table ${esc(S.code)}…</h2><p class="mut">En attente de l'hôte.</p></div>`);}
 function vLobby(G){
   const solo=S.net.mode==='solo';
   const center=solo?`<div class="lbl">Entraînement</div><div class="nm">Solo</div>`:`<div class="lbl">Code de la table</div><div class="code">${esc(S.code)}</div><div class="small" style="color:#d8f0df">${players().length} joueur${players().length>1?'s':''} assis</div>`;
