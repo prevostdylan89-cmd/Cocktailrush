@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Cocktail Rush</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Caveat:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--felt:#17703f;--felt2:#0f5530;--felt3:#093a20;--wood:#6b3d1c;--ink:#f6f1e6;--mut:#b9d3c1;--acc:#ffc94a;--red:#d7262f;--paper:#f7f0df;--pink:#2b2118;--ok:#2f9e5b;--ko:#d23b30;--r:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;color:var(--ink);font:15px/1.4 Inter,system-ui,sans-serif;min-height:100%}
+body{background:radial-gradient(ellipse at 50% 30%,#1d8048 0%,var(--felt2) 55%,var(--felt3) 100%) fixed;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background:repeating-radial-gradient(circle at 30% 20%,rgba(0,0,0,.25) 0 1px,transparent 1px 3px),repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 2px,transparent 2px 5px)}
+#app{position:relative;max-width:520px;margin:0 auto;padding:12px 12px 120px}
+h1,h2,.disp{font-family:"Bricolage Grotesque",Inter,sans-serif;margin:0}
+h1{font-size:38px;font-weight:800;letter-spacing:-.5px;text-shadow:0 3px 0 rgba(0,0,0,.25)}
+h2{font-size:21px;font-weight:800}
+.mut{color:var(--mut)} .small{font-size:13px}
+.panel{background:rgba(5,30,16,.55);border:1px solid rgba(255,255,255,.12);border-radius:var(--r);padding:14px;margin:10px 0;backdrop-filter:blur(3px)}
+.row{display:flex;gap:8px;align-items:center}.between{justify-content:space-between}
+input.f{width:100%;background:rgba(255,255,255,.95);border:0;color:#1a1a1a;border-radius:12px;padding:13px 14px;font:inherit;font-size:16px;outline:none}
+.btn{display:block;width:100%;border:0;border-radius:14px;padding:15px;font:700 16px Inter,sans-serif;cursor:pointer;background:rgba(255,255,255,.12);color:var(--ink);border:1px solid rgba(255,255,255,.2)}
+.btn.pri{background:var(--acc);color:#2a1a00;border-color:#e0a91f;box-shadow:0 4px 0 #b9850f}
+.btn.pri:active{transform:translateY(3px);box-shadow:0 1px 0 #b9850f}
+.btn.red{background:var(--red);border-color:#a3151d;color:#fff;box-shadow:0 4px 0 #8e1018}
+.btn:disabled{opacity:.45}.btn+.btn{margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:var(--ink);border-radius:999px;padding:9px 14px;font:600 14px Inter,sans-serif}
+.chip.on{background:var(--acc);color:#2a1a00;border-color:var(--acc)}
+.top{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--mut);margin-bottom:6px}
+.top b{color:var(--ink)}
+.xbtn{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.2);color:var(--ink);border-radius:10px;padding:5px 10px;font:inherit;font-size:13px}
+/* ---- table ---- */
+.tablewrap{padding:10px 4px}
+.ptable{position:relative;height:300px;border-radius:50%/50%;background:radial-gradient(ellipse at 50% 40%,#25965a 0%,#16733f 60%,#0f5a31 100%);border:12px solid var(--wood);box-shadow:inset 0 0 0 3px #c79a4a,inset 0 0 40px rgba(0,0,0,.45),0 10px 24px rgba(0,0,0,.45);background-clip:padding-box}
+.ptable::after{content:"";position:absolute;inset:-14px;border-radius:50%;border:2px solid rgba(0,0,0,.35);pointer-events:none}
+.center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;width:52%}
+.center .lbl{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#d8f0df;opacity:.85}
+.center .nm{font:800 22px/1.05 "Bricolage Grotesque",sans-serif;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);margin-top:2px}
+.center .code{font:800 34px "Bricolage Grotesque",sans-serif;letter-spacing:6px;color:var(--acc)}
+.tag{position:absolute;transform:translate(-50%,-50%);background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:600;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;z-index:2}
+.tag.me{background:var(--acc);color:#2a1a00;border-color:var(--acc)}
+.slot{position:absolute;transform:translate(-50%,-50%);width:44px;height:62px;border-radius:7px;perspective:600px}
+.slot.empty{border:2px dashed rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:16px}
+.cback,.cface{position:absolute;inset:0;border-radius:7px;box-shadow:0 3px 6px rgba(0,0,0,.4)}
+.cback{background:var(--red);border:3px solid #fff;display:flex;align-items:center;justify-content:center}
+.cback::before{content:"";position:absolute;width:70%;height:84%;border-radius:50%;background:#fff;transform:rotate(30deg)}
+.cback span{position:relative;font:800 16px "Bricolage Grotesque";color:var(--red)}
+.cface{background:var(--paper);color:var(--pink);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:800;line-height:1}
+.cface .e{font:800 18px "Bricolage Grotesque"}.cface .p{font-size:11px;color:#2f7a4c;margin-top:3px}
+.cface.best{box-shadow:0 0 0 3px var(--acc),0 3px 6px rgba(0,0,0,.4)}
+.flipin{animation:flipin .8s ease both}
+@keyframes flipin{0%{transform:rotateY(180deg) scale(1.1)}100%{transform:none}}
+.drop{animation:drop .45s cubic-bezier(.2,1.4,.5,1) both}
+@keyframes drop{0%{transform:translateY(-40px) scale(1.4) rotate(-12deg);opacity:0}100%{transform:none;opacity:1}}
+/* ---- carte papier ---- */
+.paper{background:var(--paper);color:var(--pink);border-radius:14px;padding:14px 14px 10px;box-shadow:0 10px 24px rgba(0,0,0,.4);position:relative;transform:rotate(-.6deg)}
+.paper::before{content:"";position:absolute;inset:6px;border:1.5px solid #2b2118;border-radius:10px;pointer-events:none;opacity:.8}
+.paper .ttl{font:800 24px "Bricolage Grotesque";text-transform:uppercase;letter-spacing:.5px;padding:2px 4px 6px;border-bottom:2px solid #2b2118}
+.fl{display:flex;align-items:baseline;gap:6px;border-bottom:1px dashed #b7a98d;padding:4px 4px 0}
+.fl label{font:800 11px Inter;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;color:#4a3a2b}
+.hw{flex:1;min-width:0;background:transparent;border:0;outline:none;font:600 24px/1.25 Caveat,cursive;color:#1b3fa0;padding:2px 0}
+.hw::placeholder{color:#c8bba1}
+.ihead{display:flex;font:800 11px Inter;letter-spacing:1px;text-transform:uppercase;color:#4a3a2b;padding:10px 4px 2px;border-bottom:2px solid #2b2118}
+.ihead span:first-child{flex:1}.ihead span:last-child{width:96px;text-align:center}
+.irow{display:flex;gap:6px;border-bottom:1px dashed #b7a98d;padding:0 4px;background:repeating-linear-gradient(transparent 0 0)}
+.irow:nth-child(odd){background:rgba(0,0,0,.035)}
+.irow .q{width:96px;flex:0 0 96px;text-align:center;border-left:1px solid #b7a98d}
+.addl{background:none;border:0;color:#7a6a52;font:600 13px Inter;padding:8px 4px}
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:12px 12px calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(9,58,32,.95) 35%);z-index:5}
+.bottom>div{max-width:520px;margin:0 auto}
+.flyer{position:fixed;z-index:50;transition:all .7s cubic-bezier(.5,0,.3,1);pointer-events:none}
+/* ---- révélation ---- */
+.det{margin-top:8px;font-size:14px}
+.det .it{display:flex;gap:8px;padding:5px 0;border-top:1px solid rgba(255,255,255,.12)}
+.det .it .s{width:18px;text-align:center;font-weight:800}
+.ok{color:#6fe39b}.ko{color:#ff8a80}
+.prow{cursor:pointer}
+.pts{font:800 22px "Bricolage Grotesque";color:var(--acc)}
+.recipe .r{display:flex;justify-content:space-between;gap:10px;padding:5px 4px;border-bottom:1px dashed #b7a98d;font-size:14px}
+.recipe .r span:last-child{font:700 20px/1.1 Caveat;color:#1b3fa0;text-align:right}
+.score{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.12)}
+.you{color:var(--acc);font-size:12px;margin-left:4px}
+.banner{background:rgba(120,20,20,.6);border:1px solid #ff8a80;color:#ffd6d2;border-radius:12px;padding:10px 12px;font-size:14px;margin:8px 0}
+.hero{text-align:center;padding:16px 0 4px}
+.hero .cards{display:flex;justify-content:center;gap:0;margin-bottom:8px}
+.hero .cards .c{width:54px;height:76px;position:relative}
+#sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-end;z-index:20}
+#sheet.on{display:flex}
+#sheet .in{background:#0f4a2a;border-top:2px solid var(--acc);width:100%;max-width:520px;margin:0 auto;border-radius:20px 20px 0 0;padding:18px 14px calc(16px + env(safe-area-inset-bottom))}
+#toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#000c;padding:10px 16px;border-radius:12px;display:none;z-index:60;font-size:14px}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:16px 0}
+.pod{width:30%;text-align:center}
+.pod .bar{background:var(--paper);color:var(--pink);border-radius:12px 12px 0 0;display:flex;justify-content:center;padding-top:8px;font:800 26px "Bricolage Grotesque"}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet"><div class="in" id="sheetin"></div></div>
+<div id="toast"></div>
+<script>
+/* ================= DONNÉES (livre EBS, chap. 22) ================= */
+const HB='Highball',RK='Rocks',CP='Martini / Coupe',FL='Champagne Flute';
+const N='None',CU='Cubed',CR='Crushed';
+const B='Build',SS='Shake & Strain',SFS='Shake & Fine Strain',SJ='Stir & Julep Strain';
+const GLASSES=[HB,RK,CP,FL,'Shooter','Copper Mug','Julep Tin','Sour Glass'];
+const ICES=[{v:N,l:'Sans glace'},{v:CU,l:'Cubes (Cubed)'},{v:CR,l:'Pilée (Crushed)'}];
+const ICE_L={None:'Sans glace',Cubed:'Cubes',Crushed:'Pilée'};
+const TECHS=[B,'Build & Stir','Build & Float','Build & Sink',SS,SFS,'Dry Shake, Shake & Strain','Dry Shake, Shake & Fine Strain','Shake, Strain & Float',SJ,'Muddle, Build & Churn','Muddle, Bash, Build & Churn','Soak, Muddle, Bash, Build & Churn','Layer in Order','Roll'];
+const A=x=>Array.isArray(x)?x:[x];
+const K=(n,g,i,t,ing,gar,o='')=>({n,g:A(g),i:A(i),t:A(t),ing,gar,o});
+const C=[
+K('Gin & Tonic',HB,CU,B,[['Gin','40'],['Tonic','Fill']],[['Lime Wedge']],'Vodka & Tonic : vodka à la place du gin'),
+K('Cuba Libre',HB,CU,B,[['Light Rum','40'],['Fresh Lime Juice','10'],['Coca Cola','Fill']],[['Lime Wedge']],'Cubata : Dark Rum à la place du Light Rum'),
+K('Tequila Sunrise',HB,CU,'Build & Sink',[['Tequila','40'],['Orange Juice','Fill'],['Grenadine','10']],[[]],'La grenadine coule au fond (sink)'),
+K('Rusty Nail',RK,CU,B,[['Scotch Whisky','30'],['Drambuie','30']],[['Lemon Zest']]),
+K('Godfather',RK,CU,B,[['Scotch Whisky','30'],['Amaretto','30']],[[]],'Godmother : vodka à la place du scotch'),
+K('Black Russian',RK,CU,B,[['Vodka','40'],['Coffee Liqueur','20']],[[]]),
+K('White Russian',RK,CU,B,[['Vodka','40'],['Coffee Liqueur','20'],['Milk','Fill']],[[]],'Crème ou half & half à la place du lait · Colorado Bulldog : top Coca Cola'),
+K('Moscow Mule',[HB,'Copper Mug'],CU,B,[['Vodka','40'],['Fresh Lime Juice','20'],['Ginger Beer','Fill']],[['Lime Wedge']],'Missouri Mule : Southern Comfort · Jamaican Mule : Spiced Rum'),
+K('El Diablo',HB,CU,B,[['Tequila','30'],['Crème de Cassis','10'],['Fresh Lime Juice','10'],['Ginger Ale','Fill']],[['Lime Wedge']]),
+K('Sex on the Beach',HB,CU,B,[['Vodka','20'],['Peach Liqueur','20'],['Cranberry Juice','Fill equal parts'],['Orange Juice','Fill equal parts']],[[]]),
+K('Cosmopolitan',CP,N,SFS,[['Citron Vodka','40'],['Triple Sec','20'],['Fresh Lime Juice','10'],['Cranberry Juice','30']],[['Orange Zest']],'Zeste d\'orange flambé'),
+K('Woo Woo',HB,CU,B,[['Vodka','20'],['Peach Liqueur','20'],['Cranberry Juice','Fill']],[['Lime Wedge']],'Cape Codder : vodka à la place de la liqueur de pêche'),
+K('Americano',RK,CU,'Build & Stir',[['Sweet Vermouth','30'],['Campari','30'],['Soda Water','30']],[['Orange Zest'],['Orange Slice']]),
+K('Screaming Orgasm',RK,CU,SS,[['Vodka','10'],['Coffee Liqueur','10'],['Amaretto','10'],['Baileys','10'],['Milk','40']],[[]],'Crème ou half & half à la place du lait · Orgasm : sans vodka'),
+K("Horse's Neck",HB,CU,B,[['Aromatic Bitters','2 dashes'],['Bourbon','40'],['Ginger Ale','Fill']],[['Lemon Spiral']],'Brandy à la place du bourbon'),
+K('Tom Collins',HB,CU,SS,[['Gin','60'],['Fresh Lemon Juice','30'],['Sugar Syrup','15'],['Soda Water','Top']],[['Lemon Wedge']],'John Collins : bourbon à la place du gin'),
+K('Long Island Iced Tea',HB,CU,SS,[['Vodka','20'],['Light Rum','20'],['Gin','20'],['Tequila','20'],['Triple Sec','20'],['Fresh Lemon Juice','20'],['Sugar Syrup','10'],['Coca Cola','Top']],[['Lemon Wedge']],'Long Beach : cranberry à la place du coca · Beverly Hills : champagne'),
+K('Dry Martini',CP,N,SJ,[['Dry Vermouth','1 barspoon'],[['Gin','Vodka'],'60']],[['Olives'],['Lemon Zest']],'Naked : gin seul · Dirty : 2 barspoons de saumure d\'olive · Wet : plus de vermouth · Gibson : oignons grelots'),
+K('Manhattan (Sweet)',CP,N,SJ,[['Aromatic Bitters','2 dashes'],['Sweet Vermouth','20'],['Bourbon','60']],[['Cherry']],'Dry : vermouth dry + zeste de citron · Perfect : les deux vermouths, les deux garnitures'),
+K('Rob Roy',CP,N,SJ,[['Aromatic Bitters','2 dashes'],['Sweet Vermouth','20'],['Scotch Whisky','60']],[['Cherry']]),
+K('Paloma',HB,CU,SS,[['Tequila','60'],['Pink Grapefruit Juice','60'],['Fresh Lime Juice','10'],['Sugar Syrup','10'],['Soda Water','Top']],[['Salt Rim','Grapefruit Slice']]),
+K('Margarita',CP,N,SFS,[['Tequila','40'],['Triple Sec','20'],['Fresh Lime Juice','30'],['Sugar Syrup','10']],[['Salt Rim']],"Tommy's : sirop d'agave à la place du triple sec et du sucre · Frozen : 1 pelle de glace pilée, sucre x2"),
+K('Side Car',CP,N,SFS,[['Cognac','40'],['Triple Sec','20'],['Fresh Lemon Juice','30'],['Sugar Syrup','10']],[['Sugar Rim']]),
+K('Amaretto Sour',RK,CU,'Dry Shake, Shake & Strain',[['Aromatic Bitters','2 dashes'],['Foamer','5 dashes'],['Amaretto','60'],['Fresh Lemon Juice','30'],['Sugar Syrup','10']],[['Lemon Wedge','Cherry']],'Midori Sour : Midori à la place de l\'amaretto'),
+K('Whiskey Sour',['Sour Glass',RK],[N,CU],['Dry Shake, Shake & Fine Strain','Dry Shake, Shake & Strain'],[['Aromatic Bitters','2 dashes'],['Foamer','5 dashes'],['Bourbon','60'],['Fresh Lemon Juice','30'],['Sugar Syrup','15']],[['Orange Zest','Cherry']],'Sour glass sans glace (fine strain) ou rocks sur glaçons (strain) · New York Sour : top vin rouge'),
+K('Clover Club',CP,N,'Dry Shake, Shake & Fine Strain',[['Foamer','5 dashes'],['Raspberry Puree','15'],['Gin','60'],['Fresh Lemon Juice','30']],[['Raspberry']]),
+K('Bramble',RK,CR,'Shake, Strain & Float',[['Gin','40'],['Fresh Lemon Juice','20'],['Sugar Syrup','10'],['Crème de Mûre','20']],[['Lemon Wedge','2 Blackberries']],'La crème de mûre se verse en float à la fin'),
+K('Mojito',HB,CR,'Muddle, Bash, Build & Churn',[['Lime Wedges','4 wedges'],['Sugar Syrup','20'],['Mint Leaves','8-12 leaves'],['Light Rum','60'],['Soda Water','Fill']],[['Mint Sprig']],'Fruit Mojito : fruits + liqueur de fruit'),
+K('Caipirinha',RK,CR,'Muddle, Build & Churn',[['Lime Wedges','6 wedges'],['Sugar Syrup','20'],['Cachaça','60']],[['Lime Wedge']],'Caipiroska : vodka · Fruit Caipirinha : fruits + liqueur'),
+K('Mint Julep',[RK,'Julep Tin'],CR,'Soak, Muddle, Bash, Build & Churn',[['Bittered Sugar Cube','1 cube'],['Soda Water','1 barspoon'],['Mint Leaves','8-12 leaves'],['Bourbon','60']],[['Mint Sprig']]),
+K('Gin Basil Smash',RK,CU,SFS,[['Basil Leaves','8-12 leaves'],['Gin','60'],['Fresh Lemon Juice','30'],['Sugar Syrup','15']],[['Basil Leaf']]),
+K('Southside',CP,N,SFS,[['Mint Leaves','8-12 leaves'],['Gin','60'],['Fresh Lime Juice','30'],['Sugar Syrup','15']],[['Single Mint Leaf']]),
+K('B52','Shooter',N,'Layer in Order',[['Coffee Liqueur','20'],['Baileys','20'],['Triple Sec','20']],[[]],'Cointreau à la place du triple sec'),
+K('Pornstar Martini',CP,N,SFS,[['Vodka','40'],['Passionfruit Liqueur','20'],['Passionfruit Puree','20'],['Fresh Lime Juice','20'],['Vanilla Syrup','10'],['Brut Champagne','Shot on the side']],[['Dehydrated Lime Wheel']],'Upgrade : vodka vanille + passion fraîche'),
+K('Bellini',FL,N,B,[['Peach Puree','10'],['Peach Liqueur','10'],['Prosecco','Fill']],[[]],'Rossini : purée et liqueur de fraise'),
+K('French 75',FL,N,SFS,[['Gin','40'],['Fresh Lemon Juice','20'],['Sugar Syrup','10'],['Champagne','Top']],[['Lemon Zest']]),
+K('Last Word',CP,N,SFS,[['Gin','20'],['Maraschino','20'],['Fresh Lime Juice','20'],['Green Chartreuse','20']],[['Cherry']]),
+K('Naked & Famous',CP,N,SFS,[['Mezcal','20'],['Aperol','20'],['Yellow Chartreuse','20'],['Fresh Lime Juice','20']],[[]]),
+K('Old Fashioned',RK,CU,SJ,[['Aromatic Bitters','2 dashes'],['Bourbon','60'],['Sugar Syrup','10']],[['Orange Zest']],'N\'importe quel spiritueux vieilli à la place du bourbon'),
+K('Dark & Stormy',HB,CU,'Build & Float',[['Fresh Lime Juice','20'],['Ginger Beer','Fill'],['Dark Rum','40']],[['Lime Wedge']],'Original : Goslings Black Rum · Fidel Castro : build + ginger ale'),
+K('Hemingway Daiquiri',CP,N,SFS,[['Light Rum','50'],['Maraschino','10'],['Fresh Lime Juice','20'],['Grapefruit Juice','20']],[['Cherry']],'On the rocks : verre rocks avec glaçons'),
+K('White Lady',CP,N,SFS,[['Gin','40'],['Triple Sec','20'],['Fresh Lemon Juice','30'],['Sugar Syrup','10']],[['Lemon Zest']],'Pink Lady : + 1 dash de grenadine'),
+K('Bloody Mary',HB,[CU,N],'Roll',[['Vodka','40'],['Fresh Lemon Juice','10'],['Bloody Mary Pre-Batch','120']],[['Celery Stick']],'Pre-batch (bouteille 70 cl) : 30 ml Worcestershire, 10 ml Tabasco, 2 g poivre noir, 4 g sel de céleri, jus de tomate jusqu\'en haut · Red Snapper : gin'),
+K('Negroni',RK,CU,SJ,[['Sweet Vermouth','20'],['Campari','20'],['Gin','20']],[['Orange Zest'],['Orange Slice']],'Sbagliato : prosecco à la place du gin · Boulevardier : bourbon'),
+K('Daiquiri',CP,N,SFS,[['Light Rum','60'],['Fresh Lime Juice','30'],['Sugar Syrup','15']],[[]],'Fresh Fruit Daiquiri : fruits + liqueur de fruit'),
+K('French Martini',CP,N,SFS,[['Vodka','40'],['Chambord','20'],['Pineapple Juice','40']],[['Raspberry']],'Ananas frais pilé, feuille d\'ananas en déco'),
+K('Lynchburg Lemonade',HB,CU,SS,[["Jack Daniel's",'40'],['Triple Sec','20'],['Fresh Lemon Juice','20'],['Sugar Syrup','10'],['Lemonade','Top']],[['Lemon Wedge']])
+];
+const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const uniq=a=>[...new Set(a)];
+const ING_LIST=uniq(C.flatMap(c=>c.ing.flatMap(x=>A(x[0]))).concat(['Agave Syrup','Cointreau','Spiced Rum','Brandy','Red Wine','Tomato Juice','Egg White','Midori','Southern Comfort','Honey Syrup','Grenadine','Pineapple Juice','Apple Juice'])).sort((a,b)=>norm(a).localeCompare(norm(b)));
+const QTY_LIST=['10','15','20','25','30','40','45','50','60','90','120','1 dash','2 dashes','5 dashes','1 barspoon','2 barspoons','1 cube','4 wedges','6 wedges','8-12 leaves','Top','Fill','Fill equal parts','Shot on the side'];
+const GAR_LIST=uniq(C.flatMap(c=>c.gar.flat()).concat(['Lime Wheel','Lemon Wheel','Orange Wedge','Pineapple Leaf','Pearl Onions','Nutmeg'])).sort();
+const fq=q=>q==null?'—':(/^\d+$/.test(q)?q+' ml':q);
+const fname=n=>A(n).join(' ou ');
+
+/* ================= CORRECTION TOLÉRANTE (texte libre FR/EN) ================= */
+const nz=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[’']/g,' ').replace(/[^a-z0-9.,\- ]/g,' ').replace(/\s+/g,' ').trim();
+const clean=s=>nz(s).replace(/\b(fresh|frais|fraiche|freshly|de la|du|des|le|la|les|un|une|a|an|the)\b/g,' ').replace(/\s+/g,' ').trim();
+function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c;}return p[n];}
+const ratio=(a,b)=>1-lev(a,b)/Math.max(a.length,b.length);
+function mkIdx(map){const out=[];for(const [canon,al] of Object.entries(map))for(const a of uniq([canon,...al].map(clean)).filter(Boolean))out.push({canon,a});return out.sort((x,y)=>y.a.length-x.a.length);}
+function findIn(text,idx){
+  const t=clean(text);if(!t)return null;
+  let h=idx.find(x=>x.a===t);if(h)return h.canon;
+  h=idx.find(x=>(' '+t+' ').includes(' '+x.a+' '));if(h)return h.canon;
+  let best=null,br=0;for(const x of idx){const r=ratio(t,x.a);if(r>br){br=r;best=x;}}
+  return br>=0.8?best.canon:null;
+}
+/* Ingrédients */
+const ING_AL={
+'Fresh Lime Juice':['lime juice','jus de citron vert','jus citron vert','jus de lime','citron vert presse'],
+'Fresh Lemon Juice':['lemon juice','jus de citron','jus citron','jus de citron jaune','citron presse'],
+'Sugar Syrup':['simple syrup','sirop de sucre','sirop sucre','sirop de canne','sucre de canne','gomme','sirop de gomme','sirop'],
+'Light Rum':['white rum','rhum blanc','rhum leger'],'Dark Rum':['rhum ambre','rhum brun','rhum noir','black rum','goslings'],
+'Coca Cola':['coca','cola','coke'],'Soda Water':['soda','club soda','eau gazeuse','eau petillante','perrier'],
+'Tonic':['tonic water','schweppes','eau tonique'],'Ginger Beer':['biere de gingembre','ginger bier'],'Ginger Ale':['canada dry'],
+'Orange Juice':['jus d orange','jus orange'],'Cranberry Juice':['cranberry','jus de cranberry','jus de canneberge'],'Pineapple Juice':['jus d ananas','jus ananas'],
+'Grapefruit Juice':['jus de pamplemousse','jus pamplemousse'],'Pink Grapefruit Juice':['jus de pamplemousse rose','pink grapefruit','pamplemousse rose'],
+'Milk':['lait'],'Coffee Liqueur':['liqueur de cafe','liqueur cafe','kahlua','tia maria'],'Peach Liqueur':['liqueur de peche','peach schnapps','creme de peche','schnapps peche'],
+'Triple Sec':['cointreau','triple-sec'],'Sweet Vermouth':['vermouth rouge','vermouth doux','martini rosso','red vermouth','rosso'],'Dry Vermouth':['vermouth dry','vermouth sec','vermouth blanc sec','noilly prat','martini dry','extra dry vermouth'],
+'Aromatic Bitters':['angostura','bitters','bitter aromatique','angostura bitters'],'Foamer':['blanc d oeuf','egg white','blanc oeuf','aquafaba','mousse'],
+'Scotch Whisky':['scotch','whisky','grant s scotch whisky','grants','whisky ecossais','scotch whiskey'],'Bourbon':['bourbon whiskey','bourbon whisky'],
+'Crème de Cassis':['cassis','liqueur de cassis'],'Crème de Mûre':['creme de mure','liqueur de mure','mure'],'Mint Leaves':['menthe','feuilles de menthe','mint','feuille de menthe'],
+'Basil Leaves':['basilic','feuilles de basilic','basil','feuille de basilic'],'Lime Wedges':['quartiers de citron vert','quartier de citron vert','citron vert','lime','limes','lime wedge'],
+'Bittered Sugar Cube':['sucre','morceau de sucre','sugar cube','cube de sucre','sucre angostura'],'Raspberry Puree':['puree de framboise','framboise'],
+'Passionfruit Puree':['puree de passion','puree de fruit de la passion','passion fruit puree'],'Passionfruit Liqueur':['liqueur de passion','passoa','passion fruit liqueur','liqueur fruit de la passion'],
+'Vanilla Syrup':['sirop de vanille','sirop vanille'],'Brut Champagne':['champagne brut','shot de champagne'],'Champagne':['champ'],'Peach Puree':['puree de peche'],
+'Maraschino':['marasquin','luxardo','liqueur de marasquin'],'Green Chartreuse':['chartreuse verte'],'Yellow Chartreuse':['chartreuse jaune'],'Grenadine':['sirop de grenadine'],
+"Jack Daniel's":['jack daniels','jack','tennessee whiskey'],'Lemonade':['limonade','sprite','7up'],'Citron Vodka':['vodka citron','absolut citron','lemon vodka'],
+'Bloody Mary Pre-Batch':['pre batch','prebatch','pre-batch','mix bloody mary','bloody mary mix'],'Cachaça':['cachaca'],'Prosecco':['proseco'],'Campari':[],'Aperol':[],'Mezcal':['mescal'],
+'Drambuie':[],'Amaretto':['disaronno'],'Baileys':['bailey s','creme irlandaise'],'Chambord':['liqueur de framboise'],'Cognac':['brandy'],'Tequila':[],'Gin':[],'Vodka':[]
+};
+for(const c of C)for(const [n] of c.ing)for(const x of A(n))if(!ING_AL[x])ING_AL[x]=[];
+const ING_IDX=mkIdx(ING_AL);
+/* Doses */
+function pq(s){
+  const n=nz(s);if(!n)return null;
+  const m=n.match(/(\d+(?:[.,]\d+)?)/);const x=m?parseFloat(m[1].replace(',','.')):null;
+  if(/side|cote/.test(n))return 'side';
+  if(/top|fill|complet|remplir|rallong|equal|moitie|parts egales|jusqu/.test(n))return 'fill';
+  if(/dash|trait|goutte/.test(n))return 'dash:'+(x||1);
+  if(/bar ?spoon|bsp|cuill/.test(n))return 'bsp:'+(x||1);
+  if(/cube|morceau/.test(n))return 'cube:'+(x||1);
+  if(/wedge|quartier/.test(n))return 'wedge:'+(x||1);
+  if(/lea|feuille/.test(n))return (x==null||(x>=6&&x<=14))?'leaf':'leaf:'+x;
+  if(/gram|\bg\b/.test(n))return 'g:'+x;
+  if(x!=null&&/\bcl\b|\dcl/.test(n))return 'ml:'+Math.round(x*10);
+  if(x!=null&&/oz|once/.test(n))return 'oz:'+x;
+  if(x!=null)return 'ml:'+x;
+  return 'txt:'+n;
+}
+/* Verre */
+const GL_AL={'Highball':['highball','high ball','verre tube','tube','long drink','collins','highbal'],'Rocks':['rocks','rock','old fashioned','old fashion','tumbler','verre bas','whisky glass'],
+'Martini / Coupe':['martini','coupe','coupette','cocktail glass','verre a cocktail','verre a martini'],'Champagne Flute':['flute','champagne'],'Shooter':['shooter','shot'],
+'Copper Mug':['mug','cuivre','copper','tasse'],'Julep Tin':['julep','timbale','tin'],'Sour Glass':['sour']};
+function glassesIn(text){const t=' '+clean(text)+' ';const out=new Set();for(const [g,al] of Object.entries(GL_AL))for(const a of al)if(t.includes(' '+clean(a)+' ')){out.add(g);break;}
+  if(!out.size){let best=null,br=0;for(const [g,al] of Object.entries(GL_AL))for(const a of al){const r=ratio(clean(text),clean(a));if(r>br){br=r;best=g;}}if(br>=0.75)out.add(best);}return [...out];}
+/* Glace */
+function iceOf(text){const t=nz(text);if(!t)return null;if(/pil|crush|frappe/.test(t))return CR;if(/sans|aucun|none|rien|pas de|no ice|neat|^0$|^-$|^non$/.test(t))return N;if(/cube|glacon|cubed|rock|ice|glace/.test(t))return CU;return 'txt';}
+/* Technique */
+const TK=[['build',/build|constru|monte|direct/],['stir',/stir|remu|touill|mixing glass|verre a melange/],['float',/float|flott/],['sink',/sink|coul/],['shake',/shak|secou|frap/],['strain',/strain|filtr|passe/],['fine',/fine|double|chinois/],['dry',/dry|a sec/],['muddle',/muddl|pil|ecras/],['bash',/bash/],['churn',/churn|swizzl|brass/],['soak',/soak|imbib|tremp/],['layer',/layer|couche|superpo|in order/],['roll',/roll|roul/]];
+const toks=t=>{const n=nz(t);return TK.filter(([,r])=>r.test(n)).map(([k])=>k).sort().join(' ');};
+/* Décoration */
+const GA_AL={'Lime Wedge':['lime wedge','quartier de citron vert','quartier de lime','citron vert','quartier citron vert'],'Lemon Wedge':['lemon wedge','quartier de citron','quartier citron','quartier de citron jaune'],
+'Lemon Zest':['lemon zest','zeste de citron','zeste citron','zest de citron','lemon twist','zeste de citron jaune'],'Orange Zest':['orange zest','zeste d orange','zeste orange','zest d orange','orange twist'],
+'Orange Slice':['orange slice','tranche d orange','rondelle d orange','tranche orange'],'Cherry':['cherry','cerise','griotte','amarena','cerise au marasquin','maraschino cherry'],
+'Mint Sprig':['mint sprig','brin de menthe','branche de menthe','bouquet de menthe','menthe'],'Single Mint Leaf':['single mint leaf','mint leaf','feuille de menthe','une feuille de menthe'],
+'Basil Leaf':['basil leaf','feuille de basilic','basilic'],'Celery Stick':['celery stick','branche de celeri','baton de celeri','celeri'],'Salt Rim':['salt rim','bord sel','bord de sel','givre sel','croute de sel','sel','givrage sel'],
+'Sugar Rim':['sugar rim','bord sucre','bord de sucre','givre sucre','croute de sucre','sucre','givrage sucre'],'Grapefruit Slice':['grapefruit slice','tranche de pamplemousse','pamplemousse'],
+'Lemon Spiral':['lemon spiral','spirale de citron','spirale citron','spirale','long zeste de citron'],'2 Blackberries':['blackberries','blackberry','mures','mure','2 mures'],'Olives':['olives','olive'],
+'Raspberry':['raspberry','framboise'],'Dehydrated Lime Wheel':['dehydrated lime wheel','rondelle de citron vert deshydratee','citron vert deshydrate','lime wheel','rondelle deshydratee','dehydrated lime']};
+const GA_IDX=mkIdx(GA_AL);
+function garOf(text){const t=nz(text);if(!t)return null;
+  if(/^(aucune?|none|rien|sans|pas de deco.*|non|-|0|x|nothing)$/.test(t))return [];
+  return String(text).split(/\s*(?:\+|&|,|;|\/|\bet\b|\band\b|\bavec\b|\bou\b|\bor\b)\s*/i).map(p=>nz(p).replace(/^\d+\s*/,'').trim()).filter(Boolean).map(p=>findIn(p,GA_IDX)||('?'+p));}
+
+/* ================= NOTATION ================= */
+function grade(a,c){
+  const items=[];let e=0;a=a||{};
+  const chk=(label,ok,given,exp,und)=>{items.push({label,ok,given,exp,und});if(!ok)e++;};
+  const gl=glassesIn(a.g);chk('Verre',gl.length>0&&gl.every(x=>c.g.includes(x)),a.g||'—',c.g.join(' ou '),gl.join(' / '));
+  const ic=iceOf(a.i);chk('Glaçons',!!ic&&c.i.includes(ic),a.i||'—',c.i.map(x=>ICE_L[x]).join(' ou '),ICE_L[ic]||'');
+  const tk=toks(a.t);chk('Technique',!!tk&&c.t.map(toks).includes(tk),a.t||'—',c.t.join(' ou '),'');
+  const rows=(a.ing||[]).filter(r=>r&&nz(r[0])).map(r=>({raw:r[0],q:r[1],canon:findIn(r[0],ING_IDX),used:false}));
+  for(const [n,q] of c.ing){
+    const names=A(n);const r=rows.find(x=>!x.used&&names.includes(x.canon));
+    if(!r)chk(fname(n),false,'oublié',fq(q));
+    else{r.used=true;chk(fname(n),pq(r.q)===pq(q),r.q||'pas de dose',fq(q),r.raw);}
+  }
+  rows.filter(r=>!r.used).forEach(r=>chk(r.raw,false,(r.q||'')+' · en trop','pas dans la recette',r.canon?r.canon:'non reconnu'));
+  const gs=garOf(a.gar);const fg=al=>al.length?al.join(' + '):'Aucune';
+  chk('Décoration',Array.isArray(gs)&&c.gar.some(al=>al.length===gs.length&&al.every(x=>gs.includes(x))),a.gar||'—',c.gar.map(fg).join(' ou '),gs?gs.map(x=>x[0]==='?'?x.slice(1)+' (?)':x).join(' + '):'');
+  return {e,items};
+}
+/* ================= RÉSEAU ================= */
+// Interface commune : {mode, myId, set(patch), on(cb(list)), leave()}  — list = [{id, s, me}]
+function netSolo(){
+  const s={};let cb=()=>{};
+  const fire=()=>setTimeout(()=>cb([{id:'solo',s:JSON.parse(JSON.stringify(s)),me:true}]),0);
+  return {mode:'solo',myId:'solo',set(p){Object.assign(s,p);fire();},on(f){cb=f;fire();},leave(){}};
+}
+async function netRoom(code){
+  const room=await window.claude.use('room');
+  if(!room)throw new Error('ROOM_NULL');
+  const r=await room.join('ckt-'+code.toLowerCase());
+  let myId=null;
+  return {mode:'room',get myId(){return myId;},
+    set(p){return r.presence(p).catch(()=>{});},
+    on(f){r.onPeers(ch=>{const l=ch.peers.filter(p=>p.kind!=='agent').map(p=>({id:p.peer,s:p.presence||{},me:p.sameTab}));const m=l.find(x=>x.me);if(m)myId=m.id;f(l);},e=>toast('Salle : '+e.code));},
+    leave(){r.leave().catch(()=>{});}};
+}
+function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const s=document.createElement('script');s.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('Impossible de charger PeerJS (internet ?)'));document.head.appendChild(s);});}
+const PFX='cocktailrush-ebs-';
+async function netP2PHost(code){
+  await loadPeer();
+  return new Promise((res,rej)=>{
+    const peer=new Peer(PFX+code);const conns={},states={};let cb=()=>{},t=null,opened=false;
+    const emit=()=>{clearTimeout(t);t=setTimeout(()=>{const arr=Object.entries(states).map(([id,s])=>({id,s}));for(const c of Object.values(conns))if(c.open)c.send({type:'all',arr});cb(JSON.parse(JSON.stringify(arr)).map(x=>({...x,me:x.id===peer.id})));},0);};
+    peer.on('open',id=>{opened=true;states[id]={};res({mode:'p2p',myId:id,set(p){Object.assign(states[id],JSON.parse(JSON.stringify(p)));emit();},on(f){cb=f;emit();},leave(){peer.destroy();}});});
+    peer.on('connection',c=>{conns[c.peer]=c;c.on('data',d=>{if(d&&d.type==='state'){states[c.peer]=d.s;emit();}});c.on('close',()=>{delete conns[c.peer];delete states[c.peer];emit();});});
+    peer.on('error',e=>{if(!opened)rej(e);else toast('Réseau : '+(e.type||e.message));});
+    peer.on('disconnected',()=>{try{peer.reconnect();}catch(_){}});
+  });
+}
+async function netP2PJoin(code){
+  await loadPeer();
+  return new Promise((res,rej)=>{
+    const peer=new Peer();let cb=()=>{},arr=[];const mine={};let ok=false;
+    const view=()=>arr.map(x=>({id:x.id,me:x.id===peer.id,s:x.id===peer.id?{...x.s,...mine}:x.s}));
+    peer.on('open',id=>{
+      const c=peer.connect(PFX+code,{reliable:true});
+      const to=setTimeout(()=>{if(!ok){peer.destroy();rej(new Error('Partie introuvable : vérifie le code'));}},9000);
+      c.on('open',()=>{ok=true;clearTimeout(to);c.send({type:'state',s:mine});
+        res({mode:'p2p',myId:id,set(p){Object.assign(mine,JSON.parse(JSON.stringify(p)));if(c.open)c.send({type:'state',s:mine});cb(view());},on(f){cb=f;f(view());},leave(){peer.destroy();}});});
+      c.on('data',d=>{if(d&&d.type==='all'){arr=d.arr;cb(view());}});
+      c.on('close',()=>{arr=[];cb([]);});
+    });
+    peer.on('error',e=>{if(!ok){peer.destroy();rej(new Error(e.type==='peer-unavailable'?'Partie introuvable : vérifie le code':(e.message||e.type)));}});
+  });
+}
+const IN_CLAUDE=()=>!!(window.claude&&typeof window.claude.use==='function');
+
+/* ================= ÉTAT ================= */
+const S={net:null,peers:[],isHost:false,code:'',G:null,form:null,formRound:-1,sentRound:-1,t0:0,key:'',flipped:{},open:{},err:'',seenHost:false,total:10,flying:false};
+let NAME='';try{NAME=localStorage.getItem('cr_name')||'';}catch(_){}
+const blank=()=>({g:'',i:'',t:'',ing:[['',''],['',''],['',''],['','']],gar:''});
+const myId=()=>S.net&&S.net.myId;
+const hostPeer=()=>S.peers.find(p=>p.s.role==='host');
+const getG=()=>S.isHost?S.G:(hostPeer()?.s.G||null);
+const nameOf=(id,G)=>(G&&G.names&&G.names[id])||(S.peers.find(p=>p.id===id)?.s.name)||'Joueur';
+const players=()=>S.peers.filter(p=>p.s.role);
+
+function pushG(){S.net.set({G:JSON.parse(JSON.stringify(S.G))});render();}
+function onPeers(list){S.peers=list;if(hostPeer())S.seenHost=true;if(S.isHost)hostTick();render();}
+function hostTick(){
+  const G=S.G;if(!G||G.phase!=='play')return;let ch=false;
+  for(const p of S.peers)if(G.players.includes(p.id)&&p.s.ar===G.round&&p.s.ans&&!G.sub.includes(p.id)){G.sub.push(p.id);G.subT[p.id]=Math.round((Date.now()-G.st)/1000);ch=true;}
+  const present=G.players.filter(id=>S.peers.some(p=>p.id===id));
+  if(present.length&&present.every(id=>G.sub.includes(id))){setTimeout(()=>{if(S.G.phase==='play')doReveal();},900);if(ch)pushG();return;}
+  if(ch)pushG();
+}
+function doReveal(){
+  const G=S.G,c=C[G.cid],n=G.players.length;G.ans={};G.res={};
+  const ranked=G.sub.filter(id=>G.players.includes(id)).map((id,ix)=>{const a=S.peers.find(p=>p.id===id)?.s.ans||null;G.ans[id]=a;return {id,e:grade(a,c).e,ix};}).sort((x,y)=>x.e-y.e||x.ix-y.ix);
+  ranked.forEach((r,k)=>{G.res[r.id]={e:r.e,rk:k+1,pts:(n-k)+(r.e===0?2:0),o:r.ix+1};});
+  G.players.forEach(id=>{if(!G.res[id])G.res[id]={e:null,rk:null,pts:0};G.scores[id]=(G.scores[id]||0)+G.res[id].pts;});
+  if(JSON.stringify(G).length>3000)G.ans=null;
+  G.phase='reveal';pushG();
+}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function snapshotPlayers(G){for(const p of players()){if(!G.players.includes(p.id))G.players.push(p.id);G.names[p.id]=p.s.name||'Joueur';if(G.scores[p.id]==null)G.scores[p.id]=0;}G.players=G.players.filter(id=>S.peers.some(p=>p.id===id));}
+function startGame(){const total=Math.min(S.total,C.length);const deck=shuffle(C.map((_,i)=>i)).slice(0,total);
+  S.G={phase:'play',round:1,total,deck,cid:deck[0],players:[],names:{},scores:{},sub:[],subT:{},st:Date.now(),res:null,ans:null};snapshotPlayers(S.G);pushG();}
+function nextRound(){const G=S.G;if(G.round>=G.total){G.phase='end';pushG();return;}
+  G.round++;G.cid=G.deck[G.round-1];G.phase='play';G.sub=[];G.subT={};G.res=null;G.ans=null;G.st=Date.now();snapshotPlayers(G);pushG();}
+function backToLobby(){S.G={phase:'lobby'};pushG();}
+
+/* ================= ACTIONS ================= */
+const code4=()=>Array.from({length:4},()=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random()*32)]).join('');
+function saveName(){const v=(document.getElementById('nm')?.value||'').trim().slice(0,14);NAME=v;try{localStorage.setItem('cr_name',v);}catch(_){}return v;}
+const ROOMMSG='Le multijoueur n\'est pas dispo dans cette vue Claude. Ouvre la version GitHub Pages, ou joue en solo.';
+async function create(){
+  if(!saveName())return fail('Entre ton prénom d\'abord');busy(true);
+  try{let code=code4(),net;
+    if(IN_CLAUDE())net=await netRoom(code);
+    else for(let k=0;k<3;k++){try{net=await netP2PHost(code);break;}catch(e){if(e.type==='unavailable-id'){code=code4();continue;}throw e;}}
+    S.net=net;S.isHost=true;S.code=code;S.G={phase:'lobby'};net.on(onPeers);net.set({name:NAME,role:'host',G:S.G});
+  }catch(e){return fail(e.message==='ROOM_NULL'?ROOMMSG:('Impossible de créer la partie : '+(e.message||e)));}
+  S.err='';render(true);
+}
+async function join(){
+  if(!saveName())return fail('Entre ton prénom d\'abord');
+  const code=(document.getElementById('cd')?.value||'').trim().toUpperCase();if(code.length!==4)return fail('Le code fait 4 caractères');busy(true);
+  try{const net=IN_CLAUDE()?await netRoom(code):await netP2PJoin(code);S.net=net;S.isHost=false;S.code=code;net.on(onPeers);net.set({name:NAME,role:'player'});}
+  catch(e){return fail(e.message==='ROOM_NULL'?ROOMMSG:e.message||String(e));}
+  S.err='';render(true);
+}
+function solo(){if(!saveName())NAME='Moi';S.net=netSolo();S.isHost=true;S.code='SOLO';S.G={phase:'lobby'};S.net.on(onPeers);S.net.set({name:NAME,role:'host',G:S.G});render(true);}
+function quit(){if(S.net)S.net.leave();Object.assign(S,{net:null,peers:[],isHost:false,code:'',G:null,form:null,formRound:-1,sentRound:-1,key:'',seenHost:false,err:''});render(true);}
+function fail(m){S.err=m;render(true);}
+function busy(){document.querySelectorAll('.home .btn').forEach(x=>x.disabled=true);const h=document.getElementById('hmsg');if(h)h.innerHTML='<p class="mut" style="text-align:center">Connexion…</p>';}
+function submitCard(force){
+  const f=S.form,G=getG();
+  const miss=[];if(!nz(f.g))miss.push('verre');if(!nz(f.i))miss.push('glaçons');if(!nz(f.t))miss.push('technique');if(!f.ing.some(r=>nz(r[0])))miss.push('ingrédients');if(!nz(f.gar))miss.push('décoration');
+  if(miss.length&&!force){sheet(`<h2>Il manque : ${miss.join(', ')}</h2><p class="mut">Une case vide compte comme une erreur. (Pas de déco ? écris « aucune ».)</p><button class="btn red" onclick="closeSheet();submitCard(true)">Envoyer quand même</button><button class="btn" onclick="closeSheet()">Continuer à écrire</button>`);return;}
+  const ans={g:f.g.trim(),i:f.i.trim(),t:f.t.trim(),ing:f.ing.filter(r=>nz(r[0])||nz(r[1])).map(r=>[r[0].trim(),r[1].trim()]),gar:f.gar.trim()};
+  S.net.set({ans,ar:G.round});
+  flyCard(()=>{S.sentRound=G.round;render(true);});
+}
+function flyCard(done){
+  const p=document.querySelector('.paper'),tg=document.getElementById('slot-me');
+  if(!p||!tg){done();return;}
+  const a=p.getBoundingClientRect(),b=tg.getBoundingClientRect();
+  const fl=document.createElement('div');fl.className='flyer';
+  fl.style.cssText=`left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px;border-radius:14px;background:var(--paper);box-shadow:0 10px 24px rgba(0,0,0,.4)`;
+  document.body.appendChild(fl);p.style.visibility='hidden';
+  window.scrollTo({top:0,behavior:'smooth'});
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{const b2=tg.getBoundingClientRect();
+    fl.style.left=b2.left+'px';fl.style.top=b2.top+'px';fl.style.width=b2.width+'px';fl.style.height=b2.height+'px';fl.style.borderRadius='7px';fl.style.background='var(--red)';fl.style.transform='rotate(540deg)';}));
+  setTimeout(()=>{fl.remove();done();},760);
+}
+
+/* ================= UI helpers ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2600);}
+function sheet(h){$('#sheetin').innerHTML=h;$('#sheet').classList.add('on');}
+function closeSheet(){$('#sheet').classList.remove('on');}
+$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet();});
+setInterval(()=>{const t=document.getElementById('timer');if(t&&S.t0)t.textContent=Math.floor((Date.now()-S.t0)/1000)+' s';},500);
+
+/* ================= RENDU ================= */
+function render(force){
+  const G=getG();let key;
+  if(!S.net)key='home';else if(!G)key='wait:'+(S.seenHost?1:0);else key=G.phase+':'+(G.round||0)+':'+(S.sentRound===G.round?1:0);
+  if(G&&G.phase==='play'&&S.formRound!==G.round){S.form=blank();S.formRound=G.round;S.t0=Date.now();force=true;}
+  if(key===S.key&&!force&&G&&G.phase==='play'){const t=$('#tbl');if(t)t.outerHTML=vTable(G,'play',`<div class="lbl">Cocktail</div><div class="nm">${esc(C[G.cid].n)}</div>`);const h=$('#hostbar');if(h)h.outerHTML=vHostBar(G);return;}
+  if(key===S.key&&!force&&!S.net)return;
+  S.key=key;const app=$('#app');
+  if(!S.net)app.innerHTML=vHome();
+  else if(!G)app.innerHTML=vWait();
+  else if(G.phase==='lobby')app.innerHTML=vLobby(G);
+  else if(G.phase==='play')app.innerHTML=vPlay(G);
+  else if(G.phase==='reveal')app.innerHTML=vReveal(G);
+  else app.innerHTML=vEnd(G);
+  if(G&&G.phase==='reveal')S.flipped[G.round]=true;
+}
+function topbar(G){
+  const mode=S.net.mode==='solo'?'Solo':'Table <b>'+esc(S.code)+'</b>';
+  return `<div class="top"><span>${mode}${G&&G.round?` · Manche <b>${G.round}/${G.total}</b>`:''}</span><span class="row">${G&&G.phase==='play'?'<b id="timer">0 s</b>':''}<button class="xbtn" onclick="if(window.__q){quit()}else{window.__q=1;this.textContent='Sûr ?';setTimeout(()=>window.__q=0,2500)}">Quitter</button></span></div>`;
+}
+/* --- la table de jeu --- */
+function seatOrder(ids){const m=ids.indexOf(myId());return m<0?ids:ids.slice(m).concat(ids.slice(0,m));}
+function vTable(G,mode,centerHtml){
+  const ids=mode==='lobby'?players().map(p=>p.id):G.players;
+  const ord=seatOrder(ids),n=Math.max(ord.length,1);
+  const parts=ord.map((id,k)=>{
+    const ang=Math.PI/2+k*2*Math.PI/n,cx=Math.cos(ang),cy=Math.sin(ang);
+    const tx=50+46*cx,ty=50+47*cy,sx=50+30*cx,sy=50+28*cy;
+    const isMe=id===myId();
+    const nm=esc(mode==='lobby'?(S.peers.find(p=>p.id===id)?.s.name||'Joueur'):nameOf(id,G));
+    const host=mode==='lobby'&&S.peers.find(p=>p.id===id)?.s.role==='host'?'👑 ':'';
+    let card='';
+    if(mode==='play'){const k2=G.sub.indexOf(id);
+      card=k2>=0?`<div class="slot" ${isMe?'id="slot-me"':''} style="left:${sx}%;top:${sy}%"><div class="cback drop"><span>${k2+1}</span></div></div>`
+                :`<div class="slot empty" ${isMe?'id="slot-me"':''} style="left:${sx}%;top:${sy}%">✍️</div>`;}
+    if(mode==='reveal'){const r=G.res[id]||{};const anim=!S.flipped[G.round];
+      card=`<div class="slot" style="left:${sx}%;top:${sy}%"><div class="cface ${r.rk===1?'best':''} ${anim?'flipin':''}">${r.e==null?'<span class="e">—</span>':`<span class="e">${r.e===0?'★':r.e}</span><span class="p">+${r.pts}</span>`}</div></div>`;}
+    return `<div class="tag ${isMe?'me':''}" style="left:${tx}%;top:${ty}%">${host}${nm}</div>${card}`;
+  }).join('');
+  return `<div class="tablewrap" id="tbl"><div class="ptable"><div class="center">${centerHtml||''}</div>${parts}</div></div>`;
+}
+function backs(n){return `<div class="cards">${Array.from({length:n},(_,i)=>`<div class="c" style="transform:rotate(${(i-(n-1)/2)*12}deg) translateY(${Math.abs(i-(n-1)/2)*6}px);margin:0 -10px"><div class="cback"><span>🍸</span></div></div>`).join('')}</div>`;}
+function vHome(){
+  return `<div class="home"><div class="hero">${backs(4)}<h1>Cocktail Rush</h1><p class="mut">${C.length} fiches techniques EBS. Écris la recette de mémoire, pose ta carte face cachée, le plus précis et le plus rapide gagne.</p></div>
+  <div class="panel"><label class="small mut">Ton prénom</label><input class="f" id="nm" maxlength="14" value="${esc(NAME)}" placeholder="Dylan" autocomplete="off" style="margin-top:6px"></div>
+  <button class="btn pri" onclick="create()">Ouvrir une table (hôte)</button>
+  <div class="panel"><label class="small mut">Code de la table d'un ami</label><div class="row" style="margin-top:6px"><input class="f" id="cd" maxlength="4" placeholder="ABCD" style="text-transform:uppercase;letter-spacing:4px;font-weight:700" autocomplete="off"><button class="btn" style="width:auto;margin:0;padding:13px 18px" onclick="join()">S'asseoir</button></div></div>
+  <button class="btn" onclick="solo()">Entraînement solo</button>
+  <div id="hmsg">${S.err?`<div class="banner">${esc(S.err)}</div>`:''}</div>
+  <div class="panel small mut"><b style="color:var(--ink)">Règles</b><br>Tout s'écrit à la main : verre, glaçons, technique, ingrédients + dose, décoration. Français ou anglais, petites fautes tolérées, « cl » accepté, « top » = « fill ».<br>1 erreur par case fausse, par ingrédient oublié, en trop ou mal dosé. Moins d'erreurs d'abord, puis le plus rapide : 4·3·2·1 pts à 4 joueurs, +2 pour une carte parfaite.</div></div>`;
+}
+function vWait(){return topbar(null)+(S.seenHost?`<div class="banner">L'hôte a quitté la table.</div><button class="btn" onclick="quit()">Retour</button>`:`<div class="panel" style="text-align:center"><h2>On rejoint la table ${esc(S.code)}…</h2><p class="mut">En attente de l'hôte.</p></div>`);}
+function vLobby(G){
+  const solo=S.net.mode==='solo';
+  const center=solo?`<div class="lbl">Entraînement</div><div class="nm">Solo</div>`:`<div class="lbl">Code de la table</div><div class="code">${esc(S.code)}</div><div class="small" style="color:#d8f0df">${players().length} joueur${players().length>1?'s':''} assis</div>`;
+  return topbar(null)+vTable(G,'lobby',center)+(solo?'':`<p class="small mut" style="text-align:center;margin:0">Tes amis ouvrent ce même lien, tapent ton prénom… et le code.</p>`)
+  +(S.isHost?`<div class="panel"><div class="small mut" style="margin-bottom:8px">Nombre de manches</div><div class="chips">${[5,10,15,20,C.length].map(n=>`<button class="chip ${S.total===n?'on':''}" onclick="S.total=${n};render(true)">${n===C.length?'Toutes ('+n+')':n}</button>`).join('')}</div></div>
+  <div class="bottom"><div><button class="btn pri" onclick="startGame()">${solo?'Distribuer':'Distribuer les cartes'}</button></div></div>`
+  :`<div class="panel" style="text-align:center"><p class="mut" style="margin:0">L'hôte va distribuer…</p></div>`);
+}
+function vHostBar(G){if(!S.isHost||S.net.mode==='solo'||G.phase!=='play')return '<div id="hostbar"></div>';
+  return `<div id="hostbar">${G.sub.length&&G.sub.length<G.players.length?`<button class="btn" onclick="doReveal()">Retourner les cartes maintenant (${G.sub.length}/${G.players.length})</button>`:''}</div>`;}
+function hw(field,ph,max,extra=''){return `<input class="hw" value="${esc(S.form[field])}" maxlength="${max}" placeholder="${ph}" oninput="S.form.${field}=this.value" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" ${extra}>`;}
+function irow(i){const r=S.form.ing[i];return `<div class="irow"><input class="hw" value="${esc(r[0])}" maxlength="40" placeholder="${i===0?'ingrédient…':''}" oninput="S.form.ing[${i}][0]=this.value;autoRow(${i})" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"><input class="hw q" value="${esc(r[1])}" maxlength="16" placeholder="${i===0?'dose':''}" oninput="S.form.ing[${i}][1]=this.value" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></div>`;}
+function autoRow(i){if(i===S.form.ing.length-1&&S.form.ing.length<10)addRow();}
+function addRow(){if(S.form.ing.length>=10)return;S.form.ing.push(['','']);const box=document.getElementById('irows');if(box)box.insertAdjacentHTML('beforeend',irow(S.form.ing.length-1));}
+function vPlay(G){
+  const c=C[G.cid];
+  const center=`<div class="lbl">Cocktail</div><div class="nm">${esc(c.n)}</div>`;
+  const head=topbar(G)+vTable(G,'play',center);
+  if(S.sentRound===G.round)
+    return head+`<div class="panel" style="text-align:center"><h2>Carte posée face cachée</h2><p class="mut" style="margin:6px 0 0">${S.net.mode==='solo'?'':'On retourne toutes les cartes dès que tout le monde a posé la sienne.'}</p></div>${vHostBar(G)}`;
+  return head+vHostBar(G)+`<div class="paper">
+    <div class="ttl">${esc(c.n)}</div>
+    <div class="fl"><label>Verre :</label>${hw('g','',30)}</div>
+    <div class="fl"><label>Glaçons :</label>${hw('i','',20)}</div>
+    <div class="fl"><label>Technique :</label>${hw('t','',60)}</div>
+    <div class="ihead"><span>Ingrédients</span><span>Dose</span></div>
+    <div id="irows">${S.form.ing.map((_,i)=>irow(i)).join('')}</div>
+    <button class="addl" onclick="addRow()">+ une ligne</button>
+    <div class="fl" style="border-top:2px solid #2b2118"><label>Décoration :</label>${hw('gar','',60)}</div>
+  </div><div class="bottom"><div><button class="btn red" onclick="submitCard()">Envoyer la carte sur la table</button></div></div>`;
+}
+function vRecipe(c){
+  return `<div class="paper recipe" style="margin-top:14px"><div class="ttl">${esc(c.n)} · la bonne fiche</div>
+  <div class="r"><span>Verre</span><span>${esc(c.g.join(' / '))}</span></div>
+  <div class="r"><span>Glaçons</span><span>${esc(c.i.join(' / '))}</span></div>
+  <div class="r"><span>Technique</span><span>${esc(c.t.join(' / '))}</span></div>
+  ${c.ing.map(([n,q])=>`<div class="r"><span>${esc(fname(n))}</span><span>${esc(fq(q))}</span></div>`).join('')}
+  <div class="r"><span>Décoration</span><span>${esc(c.gar.map(a=>a.length?a.join(' + '):'None').join(' ou '))}</span></div>
+  ${c.o?`<p class="small" style="margin:8px 4px 2px;color:#5a4a38">Options : ${esc(c.o)}</p>`:''}</div>`;
+}
+function vReveal(G){
+  const c=C[G.cid];
+  const order=G.players.slice().sort((a,b)=>(G.res[a].rk||99)-(G.res[b].rk||99));
+  const medals=['🥇','🥈','🥉'];
+  const center=`<div class="lbl">Cartes retournées</div><div class="nm">${esc(c.n)}</div>`;
+  const rows=order.map(id=>{
+    const r=G.res[id];const a=(G.ans&&G.ans[id]!==undefined)?G.ans[id]:(S.peers.find(p=>p.id===id)?.s.ans);
+    const gr=r.e!=null&&a?grade(a,c):null;const key=G.round+':'+id;const open=S.open[key]??(id===myId());
+    const det=gr&&open?`<div class="det">${gr.items.map(it=>`<div class="it"><span class="s ${it.ok?'ok':'ko'}">${it.ok?'✓':'✗'}</span><span style="flex:1"><b>${esc(it.label)}</b> : <span class="${it.ok?'':'ko'}">${esc(it.given)}</span>${it.ok?'':` <span class="mut">→ ${esc(it.exp)}</span>`}${!it.ok&&it.und&&nz(it.und)!==nz(it.label)&&nz(it.und)!==nz(it.given)?` <span class="small mut">(compris : ${esc(it.und)})</span>`:''}</span></div>`).join('')}</div>`:'';
+    return `<div class="panel prow" data-k="${esc(key)}" onclick="S.open[this.dataset.k]=${!open};render(true)"><div class="row between"><div class="row"><span style="font-size:24px">${r.rk?medals[r.rk-1]||'🍹':'⏳'}</span><div><b>${esc(nameOf(id,G))}</b>${id===myId()?'<span class="you">toi</span>':''}<div class="small mut">${r.e==null?'Pas de carte posée':(r.e===0?'Carte parfaite !':r.e+' erreur'+(r.e>1?'s':''))}${r.o?` · posée n°${r.o} en ${G.subT[id]} s`:''}</div></div></div><span class="pts">+${r.pts}</span></div>${det}${gr?`<div class="small mut" style="margin-top:4px">${open?'▲ masquer':'▼ voir sa carte'}</div>`:''}</div>`;
+  }).join('');
+  return topbar(G)+vTable(G,'reveal',center)+rows+vRecipe(c)+vScores(G)
+   +(S.isHost?`<div class="bottom"><div><button class="btn pri" onclick="nextRound()">${G.round>=G.total?'Classement final':'Manche suivante'}</button></div></div>`:`<p class="mut" style="text-align:center">L'hôte distribue la manche suivante…</p>`);
+}
+function vScores(G){const ids=Object.keys(G.scores).sort((a,b)=>G.scores[b]-G.scores[a]);
+  return `<div class="panel"><div class="small mut" style="margin-bottom:4px">Classement</div>${ids.map((id,k)=>`<div class="score"><span>${k+1}. ${esc(nameOf(id,G))}${id===myId()?'<span class="you">toi</span>':''}</span><b>${G.scores[id]} pts</b></div>`).join('')}</div>`;}
+function vEnd(G){const ids=Object.keys(G.scores).sort((a,b)=>G.scores[b]-G.scores[a]);
+  const pod=[ids[1],ids[0],ids[2]].map((id,k)=>id?`<div class="pod"><div class="small"><b>${esc(nameOf(id,G))}</b></div><div class="small mut">${G.scores[id]} pts</div><div class="bar" style="height:${[90,130,64][k]}px">${[2,1,3][k]}</div></div>`:'<div class="pod"></div>').join('');
+  return topbar(null)+`<div class="hero"><div style="font-size:54px">🏆</div><h1>${esc(nameOf(ids[0],G))} gagne !</h1></div><div class="podium">${pod}</div>${vScores(G)}`
+   +(S.isHost?`<div class="bottom"><div><button class="btn pri" onclick="backToLobby()">Nouvelle partie</button></div></div>`:`<button class="btn" onclick="quit()">Quitter</button>`);}
+render(true);
+</script>
+</body>
+</html>
