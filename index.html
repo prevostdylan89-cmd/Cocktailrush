@@ -173,11 +173,36 @@ const clean=s=>nz(s).replace(/\b(fresh|frais|fraiche|freshly|de la|du|des|le|la|
 function lev(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c;}return p[n];}
 const ratio=(a,b)=>1-lev(a,b)/Math.max(a.length,b.length);
 function mkIdx(map){const out=[];for(const [canon,al] of Object.entries(map))for(const a of uniq([canon,...al].map(clean)).filter(Boolean))out.push({canon,a});return out.sort((x,y)=>y.a.length-x.a.length);}
+/* Orthographe souple (dyslexie) : on compare les mots par leur SON (clé phonétique FR/EN) + quelques lettres d'écart.
+   « shack » = shake, « frees lemon jus » = fresh lemon juice, « hightbaul » = highball, « glasons » = glaçons… */
+function pkey(w){
+  w=nz(w).replace(/[^a-z0-9]/g,'');if(w.length<2||/^\d+$/.test(w))return w;
+  w=w.replace(/ph/g,'f').replace(/sch/g,'sh').replace(/ch/g,'sh').replace(/ck/g,'k').replace(/qu?/g,'k').replace(/c(?=[eiy])/g,'s').replace(/c/g,'k')
+     .replace(/dg(?=[eiy])/g,'j').replace(/g(?=[eiy])/g,'j').replace(/x/g,'ks').replace(/z/g,'s').replace(/gh/g,'').replace(/y/g,'i').replace(/w/g,'v')
+     .replace(/eau/g,'o').replace(/au/g,'o').replace(/(ee|ea|ie|ei)/g,'i').replace(/(ai|ay)/g,'e').replace(/(oo|ou|eu)/g,'u').replace(/ui/g,'u')
+     .replace(/([^s])h/g,'$1').replace(/^h/,'').replace(/(.)\1+/g,'$1');
+  if(w.length>3)w=w.replace(/e?s$|[ei]$/,'');
+  return w;
+}
+const tol=n=>n<=3?0:n<=5?1:n<=8?2:3;
+function wclose(a,b){if(a===b)return true;const ka=pkey(a),kb=pkey(b);if(ka===kb)return true;const t=tol(Math.min(ka.length,kb.length,b.length));return lev(ka,kb)<=t||lev(a,b)<=t;}
+/* Tous les mots de l'alias retrouvés (dans n'importe quel ordre) parmi les mots tapés ? Renvoie le nb de mots tapés inutilisés, ou -1. */
+function wordsFit(inW,alW){const used=new Set();for(const aw of alW){let k=inW.findIndex((w,i)=>!used.has(i)&&wclose(w,aw));if(k<0)return -1;used.add(k);}return inW.length-used.size;}
+/* Remplace chaque mot mal écrit par le mot connu le plus proche (pour la technique, la glace, les doses). */
+function fixWords(text,voc){return nz(text).split(' ').map(w=>{if(!w||/\d/.test(w)||voc.includes(w))return w;let best=null,bd=99;for(const v of voc){if(!wclose(w,v))continue;const d=lev(pkey(w),pkey(v));if(d<bd){bd=d;best=v;}}return best||w;}).join(' ');}
 function findIn(text,idx){
   const t=clean(text);if(!t)return null;
   let h=idx.find(x=>x.a===t);if(h)return h.canon;
   h=idx.find(x=>(' '+t+' ').includes(' '+x.a+' '));if(h)return h.canon;
   let best=null,br=0;for(const x of idx){const r=ratio(t,x.a);if(r>br){br=r;best=x;}}
+  if(br>=0.8)return best.canon;
+  /* mot à mot, au son */
+  const inW=t.split(' ');let fb=null,fl=-1,fx=99;
+  for(const x of idx){const left=wordsFit(inW,x.a.split(' '));if(left<0)continue;if(x.a.length>fl||(x.a.length===fl&&left<fx)){fb=x;fl=x.a.length;fx=left;}}
+  if(fb)return fb.canon;
+  /* mots collés ou coupés (« lemonjuice », « high ball ») */
+  const kt=t.split(' ').map(pkey).join('');best=null;br=0;
+  for(const x of idx){const r=ratio(kt,x.a.split(' ').map(pkey).join(''));if(r>br){br=r;best=x;}}
   return br>=0.8?best.canon:null;
 }
 /* Ingrédients */
@@ -207,8 +232,9 @@ const ING_AL={
 for(const c of C)for(const [n] of c.ing)for(const x of A(n))if(!ING_AL[x])ING_AL[x]=[];
 const ING_IDX=mkIdx(ING_AL);
 /* Doses */
+const Q_VOC=['top','fill','dash','dashes','trait','traits','goutte','gouttes','barspoon','cuillere','cube','cubes','morceau','wedge','wedges','quartier','quartiers','leaves','feuilles','side','remplir','complet','equal','parts'];
 function pq(s){
-  const n=nz(s);if(!n)return null;
+  const n=fixWords(s,Q_VOC);if(!n)return null;
   const m=n.match(/(\d+(?:[.,]\d+)?)/);const x=m?parseFloat(m[1].replace(',','.')):null;
   if(/side|cote/.test(n))return 'side';
   if(/top|fill|complet|remplir|rallong|equal|moitie|parts egales|jusqu/.test(n))return 'fill';
@@ -228,12 +254,15 @@ const GL_AL={'Highball':['highball','high ball','verre tube','tube','long drink'
 'Martini / Coupe':['martini','coupe','coupette','cocktail glass','verre a cocktail','verre a martini'],'Champagne Flute':['flute','champagne'],'Shooter':['shooter','shot'],
 'Copper Mug':['mug','cuivre','copper','tasse'],'Julep Tin':['julep','timbale','tin'],'Sour Glass':['sour']};
 function glassesIn(text){const t=' '+clean(text)+' ';const out=new Set();for(const [g,al] of Object.entries(GL_AL))for(const a of al)if(t.includes(' '+clean(a)+' ')){out.add(g);break;}
-  if(!out.size){let best=null,br=0;for(const [g,al] of Object.entries(GL_AL))for(const a of al){const r=ratio(clean(text),clean(a));if(r>br){br=r;best=g;}}if(br>=0.75)out.add(best);}return [...out];}
+  if(!out.size){let best=null,br=0;for(const [g,al] of Object.entries(GL_AL))for(const a of al){const r=ratio(clean(text),clean(a));if(r>br){br=r;best=g;}}if(br>=0.75)out.add(best);}
+  if(!out.size){const inW=clean(text).split(' ').filter(Boolean);if(inW.length)for(const [g,al] of Object.entries(GL_AL))for(const a of al)if(wordsFit(inW,clean(a).split(' '))>=0){out.add(g);break;}}return [...out];}
 /* Glace */
-function iceOf(text){const t=nz(text);if(!t)return null;if(/pil|crush|frappe/.test(t))return CR;if(/sans|aucun|none|rien|pas de|no ice|neat|^0$|^-$|^non$/.test(t))return N;if(/cube|glacon|cubed|rock|ice|glace/.test(t))return CU;return 'txt';}
+const ICE_VOC=['cube','cubes','cubed','glacon','glacons','glace','ice','crushed','crush','pilee','pile','frappe','sans','aucun','none','rien','neat','rocks'];
+function iceOf(text){const t=fixWords(text,ICE_VOC);if(!t)return null;if(/pil|crush|frappe/.test(t))return CR;if(/sans|aucun|none|rien|pas de|no ice|neat|^0$|^-$|^non$/.test(t))return N;if(/cube|glacon|cubed|rock|ice|glace/.test(t))return CU;return 'txt';}
 /* Technique */
 const TK=[['build',/build|constru|monte|direct/],['stir',/stir|remu|touill|mixing glass|verre a melange/],['float',/float|flott/],['sink',/sink|coul/],['shake',/shak|secou|frap/],['strain',/strain|filtr|passe/],['fine',/fine|double|chinois/],['dry',/dry|a sec/],['muddle',/muddl|pil|ecras/],['bash',/bash/],['churn',/churn|swizzl|brass/],['soak',/soak|imbib|tremp/],['layer',/layer|couche|superpo|in order/],['roll',/roll|roul/]];
-const toks=t=>{const n=nz(t);return TK.filter(([,r])=>r.test(n)).map(([k])=>k).sort().join(' ');};
+const TK_VOC=['shake','shaker','strain','stir','build','float','sink','fine','double','dry','muddle','bash','churn','swizzle','soak','layer','roll','secouer','filtrer','remuer','construire','monter','flotter','couler','piler','ecraser','touiller','chinois','rouler','tremper','superposer','couche','direct'];
+const toks=t=>{const n=fixWords(t,TK_VOC);return TK.filter(([,r])=>r.test(n)).map(([k])=>k).sort().join(' ');};
 /* Décoration */
 const GA_AL={'Lime Wedge':['lime wedge','quartier de citron vert','quartier de lime','citron vert','quartier citron vert'],'Lemon Wedge':['lemon wedge','quartier de citron','quartier citron','quartier de citron jaune'],
 'Lemon Zest':['lemon zest','zeste de citron','zeste citron','zest de citron','lemon twist','zeste de citron jaune'],'Orange Zest':['orange zest','zeste d orange','zeste orange','zest d orange','orange twist'],
@@ -450,7 +479,7 @@ function vHome(){
   <div class="panel"><label class="small mut">Code de la table d'un ami</label><div class="row" style="margin-top:6px"><input class="f" id="cd" maxlength="4" placeholder="ABCD" style="text-transform:uppercase;letter-spacing:4px;font-weight:700" autocomplete="off"><button class="btn" style="width:auto;margin:0;padding:13px 18px" onclick="join()">S'asseoir</button></div></div>
   <button class="btn" onclick="solo()">Entraînement solo</button>
   <div id="hmsg">${S.err?`<div class="banner">${esc(S.err)}</div>`:''}</div>
-  <div class="panel small mut"><b style="color:var(--ink)">Règles</b><br>Tout s'écrit à la main : verre, glaçons, technique, ingrédients + dose, décoration. Français ou anglais, petites fautes tolérées, « cl » accepté, « top » = « fill ».<br>1 erreur par case fausse, par ingrédient oublié, en trop ou mal dosé. Moins d'erreurs d'abord, puis le plus rapide : 4·3·2·1 pts à 4 joueurs, +2 pour une carte parfaite.</div></div>`;
+  <div class="panel small mut"><b style="color:var(--ink)">Règles</b><br>Tout s'écrit à la main : verre, glaçons, technique, ingrédients + dose, décoration. Français ou anglais, fautes d'orthographe tolérées (on corrige au son : « shack » = shake, « jus » = juice), « cl » accepté, « top » = « fill ».<br>1 erreur par case fausse, par ingrédient oublié, en trop ou mal dosé. Moins d'erreurs d'abord, puis le plus rapide : 4·3·2·1 pts à 4 joueurs, +2 pour une carte parfaite.</div></div>`;
 }
 function vWait(){return topbar(null)+(S.seenHost?`<div class="banner">L'hôte s'est déconnecté (écran verrouillé ?). Dès qu'il revient sur la page, la partie reprend.</div><button class="btn" onclick="quit()">Quitter la table</button>`:`<div class="panel" style="text-align:center"><h2>On rejoint la table ${esc(S.code)}…</h2><p class="mut">En attente de l'hôte.</p></div>`);}
 function vLobby(G){
