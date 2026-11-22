@@ -165,7 +165,25 @@ K('Bloody Mary',HB,[CU,N],'Roll',[['Vodka','40'],['Fresh Lemon Juice','10'],['Bl
 K('Negroni',RK,CU,SJ,[['Sweet Vermouth','20'],['Campari','20'],['Gin','20']],[['Orange Zest'],['Orange Slice']],'Sbagliato : prosecco à la place du gin · Boulevardier : bourbon'),
 K('Daiquiri',CP,N,SFS,[['Light Rum','60'],['Fresh Lime Juice','30'],['Sugar Syrup','15']],[[]],'Fresh Fruit Daiquiri : fruits + liqueur de fruit'),
 K('French Martini',CP,N,SFS,[['Vodka','40'],['Chambord','20'],['Pineapple Juice','40']],[['Raspberry']],'Ananas frais pilé, feuille d\'ananas en déco'),
-K('Lynchburg Lemonade',HB,CU,SS,[["Jack Daniel's",'40'],['Triple Sec','20'],['Fresh Lemon Juice','20'],['Sugar Syrup','10'],['Lemonade','Top']],[['Lemon Wedge']])
+K('Lynchburg Lemonade',HB,CU,SS,[["Jack Daniel's",'40'],['Triple Sec','20'],['Fresh Lemon Juice','20'],['Sugar Syrup','10'],['Lemonade','Top']],[['Lemon Wedge']]),
+K('Espresso Martini',CP,N,SFS,[['Vodka','40'],['Coffee Liqueur','20'],['Espresso','1 shot'],['Sugar Syrup','10']],[['3 Coffee Beans']],'Le sirop de sucre dépend du client et de l\'amertume du café'),
+K('Brandy Alexander',CP,N,SFS,[[['Brandy','Cognac'],'40'],['Dark Cacao Liqueur','20'],['Milk','40']],[['Grated Nutmeg']],'Alexander : gin à la place du cognac, half & half à la place du lait'),
+K('Mai Tai',[RK,'Tiki Mug'],CR,'Shake, Strain & Float',[['Dark Rum','40'],['Triple Sec','10'],['Fresh Lime Juice','20'],['Orgeat Syrup','10'],['Overproof Rum','10']],[['Mint Sprig']],'L\'Overproof Rum se verse en float à la fin'),
+K('Kir Royal',FL,N,B,[['Crème de Cassis','20'],['Champagne','Fill']],[[]],'Kir : vin blanc à la place du champagne'),
+K('Classic Champagne Cocktail',FL,N,'Soak & Build',[['Bittered Sugar Cube','1 cube'],['Cognac','20'],['Champagne','Fill']],[[]]),
+K('Blood & Sand',CP,N,SFS,[['Scotch Whisky','20'],['Sweet Vermouth','20'],['Cherry Brandy','20'],['Orange Juice','20']],[['Orange Zest']]),
+K('Continental Sour',RK,CU,'Dry Shake, Shake, Strain & Float',[['Foamer','5 dashes'],['Bourbon','60'],['Fresh Lemon Juice','30'],['Sugar Syrup','15'],['Ruby Port','10']],[['Orange Zest']],'Le porto se verse en float · Options : 15 ml de blanc d\'œuf à la place du foamer'),
+K('Aperol Spritz',[RK,'Wine Glass'],CU,['Build in Order',B],[['Prosecco','60'],['Aperol','40'],['Soda Water','20']],[['Orange Slice']]),
+K('Mimosa',FL,N,B,[['Orange Juice','1 part'],['Champagne','1 part']],[[]],'Moitié jus d\'orange, moitié champagne'),
+K('Gimlet',CP,N,SJ,[['Gin','60'],['Lime Cordial','10']],[['Lime Zest']],'Pink Gin : quelques dashes d\'Aromatic Bitters à la place du Lime Cordial, déco zeste de citron'),
+K('Martinez',CP,N,SJ,[['Orange Bitters','2 dashes'],['Maraschino','1 barspoon'],['Sweet Vermouth','20'],['Gin','60']],[['Lemon Zest']]),
+K('Sazerac',RK,N,'Rinse, Stir & Julep Strain',[['Absinthe','Rinse'],["Peychaud's Bitters",'3 dashes'],[['Cognac','Rye'],'60'],['Sugar Syrup','10']],[['Lemon Zest']],'Options : Peychaud\'s + Aromatic Bitters'),
+K('Apple Martini',CP,N,SFS,[['Vodka','40'],['Apple Liqueur','20'],['Fresh Lemon Juice','30'],['Sugar Syrup','10']],[['Lemon Zest']],'Options : feuille de pomme'),
+K('Kamikaze','Shooter',N,SFS,[['Vodka','20'],['Triple Sec','10'],['Fresh Lime Juice','10']],[[]]),
+K('Singapore Sling',[HB,'Sling'],CU,SS,[['Aromatic Bitters','1 dash'],['Grenadine','1 dash'],['Bénédictine','5'],['Triple Sec','5'],['Cherry Brandy','10'],['Fresh Lime Juice','10'],['Gin','20'],['Pineapple Juice','80']],[['Pineapple Wedge','Cherry']]),
+K('Zombie',[HB,'Tiki Mug'],CR,SS,[['Aromatic Bitters','4 dashes'],['Absinthe','2 dashes'],['Overproof Rum','10'],['Dark Rum','20'],['Light Rum','20'],['Grenadine','10'],['Cinnamon Syrup','20'],['Fresh Lime Juice','20'],['Grapefruit Juice','20']],[['Mint Sprig']],'Options : ajouter du falernum, déco bâton de cannelle'),
+K('Piña Colada (Quick)',[HB,'Hurricane'],CU,SS,[['Light Rum','40'],['Coconut Liqueur','20'],['Fresh Lime Juice','10'],['Pineapple Juice','60'],['Coconut Cream','40']],[['Pineapple Wedge','Cherry']]),
+K('Lemon Drop','Shooter',N,SFS,[['Vodka','20'],['Fresh Lemon Juice','10'],['Sugar Syrup','10']],[['Sugar Coated Lemon Wedge'],['Lemon Wedge','Sugar Rim']])
 ];
 const norm=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
 const uniq=a=>[...new Set(a)];
@@ -235,16 +253,25 @@ const ING_AL={
 'Maraschino':['marasquin','luxardo','liqueur de marasquin'],'Green Chartreuse':['chartreuse verte'],'Yellow Chartreuse':['chartreuse jaune'],'Grenadine':['sirop de grenadine'],
 "Jack Daniel's":['jack daniels','jack','tennessee whiskey'],'Lemonade':['limonade','sprite','7up'],'Citron Vodka':['vodka citron','absolut citron','lemon vodka'],
 'Bloody Mary Pre-Batch':['pre batch','prebatch','pre-batch','mix bloody mary','bloody mary mix'],'Cachaça':['cachaca'],'Prosecco':['proseco'],'Campari':[],'Aperol':[],'Mezcal':['mescal'],
-'Drambuie':[],'Amaretto':['disaronno'],'Baileys':['bailey s','creme irlandaise'],'Chambord':['liqueur de framboise'],'Cognac':['brandy'],'Tequila':[],'Gin':[],'Vodka':[]
+'Drambuie':[],'Amaretto':['disaronno'],'Baileys':['bailey s','creme irlandaise'],'Chambord':['liqueur de framboise'],'Cognac':['brandy'],'Tequila':[],'Gin':[],'Vodka':[],
+'Espresso':['expresso','cafe','cafe espresso','shot d espresso','espresso shot','cafe serre'],'Dark Cacao Liqueur':['creme de cacao','liqueur de cacao','cacao','dark cacao','creme de cacao brune','creme de cacao noire'],
+'Orgeat Syrup':['orgeat','sirop d orgeat','sirop orgeat','sirop d amande'],'Overproof Rum':['overproof','rhum overproof','rhum fort','rhum 151'],'Cherry Brandy':['liqueur de cerise','cherry heering','heering','brandy cerise'],
+'Ruby Port':['porto','porto rouge','port','porto ruby','ruby porto'],'Lime Cordial':['cordial citron vert','cordial','rose s lime','sirop de citron vert','cordial de citron vert'],'Orange Bitters':['bitter orange','orange bitter','angostura orange','bitters orange'],
+'Absinthe':['absinth','pastis'],"Peychaud's Bitters":['peychaud','peychauds','peychaud s','peychaud bitters'],'Rye':['rye whiskey','rye whisky','whisky de seigle','seigle'],
+'Apple Liqueur':['liqueur de pomme','liqueur pomme','sour apple','manzana','pomme verte','apple schnapps','pucker'],'Bénédictine':['benedictine','benedictine dom','dom benedictine','benedictine d.o.m'],
+'Cinnamon Syrup':['sirop de cannelle','sirop cannelle'],'Coconut Liqueur':['malibu','liqueur de coco','liqueur coco'],'Coconut Cream':['creme de coco','coco real','coco re al','lait de coco','creme coco']
 };
 for(const c of C)for(const [n] of c.ing)for(const x of A(n))if(!ING_AL[x])ING_AL[x]=[];
 const ING_IDX=mkIdx(ING_AL);
 /* Doses */
-const Q_VOC=['top','fill','dash','dashes','trait','traits','goutte','gouttes','barspoon','cuillere','cube','cubes','morceau','wedge','wedges','quartier','quartiers','leaves','feuilles','side','remplir','complet','equal','parts'];
+const Q_VOC=['top','fill','dash','dashes','trait','traits','goutte','gouttes','barspoon','cuillere','cube','cubes','morceau','wedge','wedges','quartier','quartiers','leaves','feuilles','side','remplir','complet','equal','parts','part','shot','rinse'];
 function pq(s){
   const n=fixWords(s,Q_VOC);if(!n)return null;
   const m=n.match(/(\d+(?:[.,]\d+)?)/);const x=m?parseFloat(m[1].replace(',','.')):null;
   if(/side|cote/.test(n))return 'side';
+  if(/rins|rinc/.test(n))return 'rinse';
+  if(/shot|dose/.test(n))return 'shot:'+(x||1);
+  if(/\bparts?\b|moitie|50 ?\/ ?50/.test(n)&&!/equal|egal/.test(n))return 'part';
   if(/top|fill|complet|remplir|rallong|equal|moitie|parts egales|jusqu/.test(n))return 'fill';
   if(/dash|trait|goutte/.test(n))return 'dash:'+(x||1);
   if(/bar ?spoon|bsp|cuill/.test(n))return 'bsp:'+(x||1);
@@ -260,16 +287,16 @@ function pq(s){
 /* Verre */
 const GL_AL={'Highball':['highball','high ball','verre tube','tube','long drink','collins','highbal'],'Rocks':['rocks','rock','old fashioned','old fashion','tumbler','verre bas','whisky glass'],
 'Martini / Coupe':['martini','coupe','coupette','cocktail glass','verre a cocktail','verre a martini'],'Champagne Flute':['flute','champagne'],'Shooter':['shooter','shot'],
-'Copper Mug':['mug','cuivre','copper','tasse'],'Julep Tin':['julep','timbale','tin'],'Sour Glass':['sour']};
+'Copper Mug':['mug','cuivre','copper','tasse'],'Tiki Mug':['tiki','tiki mug','mug tiki'],'Wine Glass':['wine glass','wine','verre a vin','ballon','verre ballon','verre a pied'],'Sling':['sling','verre sling'],'Hurricane':['hurricane','ouragan','verre hurricane'],'Julep Tin':['julep','timbale','tin'],'Sour Glass':['sour']};
 function glassesIn(text){const t=' '+clean(text)+' ';const out=new Set();for(const [g,al] of Object.entries(GL_AL))for(const a of al)if(t.includes(' '+clean(a)+' ')){out.add(g);break;}
   if(!out.size){let best=null,br=0;for(const [g,al] of Object.entries(GL_AL))for(const a of al){const r=ratio(clean(text),clean(a));if(r>br){br=r;best=g;}}if(br>=0.75)out.add(best);}
-  if(!out.size){const inW=clean(text).split(' ').filter(Boolean);if(inW.length)for(const [g,al] of Object.entries(GL_AL))for(const a of al)if(wordsFit(inW,clean(a).split(' '))>=0){out.add(g);break;}}return [...out];}
+  if(!out.size){const inW=clean(text).split(' ').filter(Boolean);if(inW.length)for(const [g,al] of Object.entries(GL_AL))for(const a of al)if(wordsFit(inW,clean(a).split(' '))>=0){out.add(g);break;}}if(out.has('Tiki Mug'))out.delete('Copper Mug');return [...out];}
 /* Glace */
 const ICE_VOC=['cube','cubes','cubed','glacon','glacons','glace','ice','crushed','crush','pilee','pile','frappe','sans','aucun','none','rien','neat','rocks'];
 function iceOf(text){const t=fixWords(text,ICE_VOC);if(!t)return null;if(/pil|crush|frappe/.test(t))return CR;if(/sans|aucun|none|rien|pas de|no ice|neat|^0$|^-$|^non$/.test(t))return N;if(/cube|glacon|cubed|rock|ice|glace/.test(t))return CU;return 'txt';}
 /* Technique */
-const TK=[['build',/build|constru|monte|direct/],['stir',/stir|remu|touill|mixing glass|verre a melange/],['float',/float|flott/],['sink',/sink|coul/],['shake',/shak|secou|frap/],['strain',/strain|filtr|passe/],['fine',/fine|double|chinois/],['dry',/dry|a sec/],['muddle',/muddl|pil|ecras/],['bash',/bash/],['churn',/churn|swizzl|brass/],['soak',/soak|imbib|tremp/],['layer',/layer|couche|superpo|in order/],['roll',/roll|roul/]];
-const TK_VOC=['shake','shaker','strain','stir','build','float','sink','fine','double','dry','muddle','bash','churn','swizzle','soak','layer','roll','secouer','filtrer','remuer','construire','monter','flotter','couler','piler','ecraser','touiller','chinois','rouler','tremper','superposer','couche','direct'];
+const TK=[['build',/build|constru|monte|direct/],['stir',/stir|remu|touill|mixing glass|verre a melange/],['float',/float|flott/],['sink',/sink|coul/],['shake',/shak|secou|frap/],['strain',/strain|filtr|passe/],['fine',/fine|double|chinois/],['dry',/dry|a sec/],['muddle',/muddl|pil|ecras/],['bash',/bash/],['churn',/churn|swizzl|brass/],['soak',/soak|imbib|tremp/],['layer',/layer|couche|superpo|in order/],['roll',/roll|roul/],['rinse',/rins|rinc/]];
+const TK_VOC=['shake','shaker','strain','stir','build','float','sink','fine','double','dry','muddle','bash','churn','swizzle','soak','layer','roll','secouer','filtrer','remuer','construire','monter','flotter','couler','piler','ecraser','touiller','chinois','rouler','tremper','superposer','couche','direct','rinse','rincer'];
 const toks=t=>{const n=fixWords(t,TK_VOC);return TK.filter(([,r])=>r.test(n)).map(([k])=>k).sort().join(' ');};
 /* Décoration */
 const GA_AL={'Lime Wedge':['lime wedge','quartier de citron vert','quartier de lime','citron vert','quartier citron vert'],'Lemon Wedge':['lemon wedge','quartier de citron','quartier citron','quartier de citron jaune'],
@@ -279,7 +306,10 @@ const GA_AL={'Lime Wedge':['lime wedge','quartier de citron vert','quartier de l
 'Basil Leaf':['basil leaf','feuille de basilic','basilic'],'Celery Stick':['celery stick','branche de celeri','baton de celeri','celeri'],'Salt Rim':['salt rim','bord sel','bord de sel','givre sel','croute de sel','sel','givrage sel'],
 'Sugar Rim':['sugar rim','bord sucre','bord de sucre','givre sucre','croute de sucre','sucre','givrage sucre'],'Grapefruit Slice':['grapefruit slice','tranche de pamplemousse','pamplemousse'],
 'Lemon Spiral':['lemon spiral','spirale de citron','spirale citron','spirale','long zeste de citron'],'2 Blackberries':['blackberries','blackberry','mures','mure','2 mures'],'Olives':['olives','olive'],
-'Raspberry':['raspberry','framboise'],'Dehydrated Lime Wheel':['dehydrated lime wheel','rondelle de citron vert deshydratee','citron vert deshydrate','lime wheel','rondelle deshydratee','dehydrated lime']};
+'Raspberry':['raspberry','framboise'],'3 Coffee Beans':['coffee beans','coffee bean','grains de cafe','grain de cafe','3 grains de cafe','grains de cafe x3'],'Grated Nutmeg':['nutmeg','muscade','noix de muscade','muscade rapee','noix de muscade rapee'],
+'Lime Zest':['lime zest','zeste de citron vert','zeste citron vert','zest de citron vert','lime twist'],'Pineapple Wedge':['pineapple wedge','quartier d ananas','quartier ananas','morceau d ananas','ananas','pineapple'],
+'Sugar Coated Lemon Wedge':['sugar coated lemon wedge','sugared lemon wedge','quartier de citron sucre','citron sucre','quartier citron sucre','lemon wedge sucre','quartier de citron au sucre'],
+'Dehydrated Lime Wheel':['dehydrated lime wheel','rondelle de citron vert deshydratee','citron vert deshydrate','lime wheel','rondelle deshydratee','dehydrated lime']};
 const GA_IDX=mkIdx(GA_AL);
 function garOf(text){const t=nz(text);if(!t)return null;
   if(/^(aucune?|none|rien|sans|pas de deco.*|non|-|0|x|nothing)$/.test(t))return [];
