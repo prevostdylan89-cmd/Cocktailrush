@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Cocktail Rush</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f5530">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cocktail Rush">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Caveat:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -543,6 +551,15 @@ function vEnd(G){const ids=Object.keys(G.scores).sort((a,b)=>G.scores[b]-G.score
   return topbar(null)+`<div class="hero"><div style="font-size:54px">🏆</div><h1>${esc(nameOf(ids[0],G))} gagne !</h1></div><div class="podium">${pod}</div>${vScores(G)}`
    +(S.isHost?`<div class="bottom"><div><button class="btn pri" onclick="backToLobby()">Nouvelle partie</button></div></div>`:`<button class="btn" onclick="quit()">Quitter</button>`);}
 render(true);
+</script>
+<button id="instBtn" onclick="doInstall()" style="display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));z-index:99;background:#ffc94a;color:#2a1a00;border:0;border-radius:999px;padding:12px 20px;font:700 15px Inter,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.4)">📲 Installer l'appli</button>
+<script>
+/* PWA : installation comme une appli */
+if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+let _instEvt=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();_instEvt=e;const b=document.getElementById('instBtn');if(b)b.style.display='block';});
+addEventListener('appinstalled',()=>{_instEvt=null;const b=document.getElementById('instBtn');if(b)b.style.display='none';});
+async function doInstall(){if(!_instEvt)return;_instEvt.prompt();await _instEvt.userChoice.catch(()=>{});_instEvt=null;document.getElementById('instBtn').style.display='none';}
 </script>
 </body>
 </html>
