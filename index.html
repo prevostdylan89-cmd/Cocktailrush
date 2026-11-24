@@ -397,27 +397,39 @@ async function netRoom(code){
 }
 /* Relais MQTT public (WebSocket sécurisé) : marche en 4G/5G et Wi-Fi, sans connexion directe entre téléphones.
    Chaque joueur publie son état en "retained" sur cocktailrush-ebs/v1/CODE/ID ; à la déconnexion, le "last will" l'efface. */
-const BROKER='wss://broker.emqx.io:8084/mqtt';
-function loadMqtt(){return new Promise((res,rej)=>{if(window.mqtt)return res();const s=document.createElement('script');s.src='https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('Impossible de charger le module réseau (internet ?)'));document.head.appendChild(s);});}
+/* Plusieurs relais publics en parallèle : si l'un est en panne ou bloqué par le réseau, les autres prennent le relais.
+   Chaque état porte un numéro de version (_v) : on garde toujours le plus récent, quel que soit le relais qui l'apporte. */
+const BROKERS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt'];
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=()=>res();s.onerror=()=>{s.remove();rej();};document.head.appendChild(s);});}
+async function loadMqtt(){if(window.mqtt)return;
+  for(const src of ['mqtt.min.js','https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js','https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js']){try{await loadScript(src);if(window.mqtt)return;}catch(_){}}
+  throw new Error('Impossible de charger le module réseau. Vérifie ta connexion internet puis recharge la page.');}
 async function netMqtt(code){
   await loadMqtt();
   return new Promise((res,rej)=>{
-    const id=Math.random().toString(36).slice(2,10),base='cocktailrush-ebs/v1/'+code+'/';
-    const mine={},states={};let cb=()=>{},t=null,done=false;
-    const c=mqtt.connect(BROKER,{clientId:'cr_'+id+'_'+Date.now().toString(36),clean:true,reconnectPeriod:1500,connectTimeout:8000,keepalive:15,will:{topic:base+id,payload:'',retain:true,qos:1}});
-    const view=()=>Object.entries(states).map(([k,s])=>({id:k,s:k===id?{...s,...mine}:s,me:k===id}));
+    const id=Math.random().toString(36).slice(2,10),base='cocktailrush-ebs/v2/'+code+'/';
+    const mine={_v:0},by=BROKERS.map(()=>({}));let cb=()=>{},t=null,done=false,failed=0;
+    const view=()=>{const m={};by.forEach(st=>{for(const [k,s] of Object.entries(st))if(!m[k]||(s._v||0)>(m[k]._v||0))m[k]=s;});m[id]={...mine};
+      return Object.entries(m).map(([k,s])=>({id:k,s,me:k===id}));};
     const fire=()=>{clearTimeout(t);t=setTimeout(()=>cb(view()),0);};
-    const pub=()=>{if(c.connected)c.publish(base+id,JSON.stringify(mine),{retain:true,qos:1});};
+    const cl=BROKERS.map((url,bi)=>{
+      let c;try{c=mqtt.connect(url,{clientId:'cr_'+id+'_'+bi+Date.now().toString(36),clean:true,reconnectPeriod:2000,connectTimeout:7000,keepalive:20,will:{topic:base+id,payload:'',retain:true,qos:1}});}catch(_){failed++;return null;}
+      let ever=false;
+      c.on('connect',()=>{ever=true;c.subscribe(base+'+',{qos:1});if(mine._v)c.publish(base+id,JSON.stringify(mine),{retain:true,qos:1});
+        if(!done){done=true;clearTimeout(to);setTimeout(()=>res(api),1200);}});
+      c.on('message',(topic,buf)=>{const k=topic.slice(base.length);if(k===id)return;const str=buf.toString();if(!str)delete by[bi][k];else{try{by[bi][k]=JSON.parse(str);}catch(_){}}fire();});
+      c.on('error',()=>{});
+      c.on('close',()=>{if(!ever&&++c._f===1){failed++;if(!done&&failed>=BROKERS.length){done=true;clearTimeout(to);rej(new Error('Aucun serveur de jeu joignable depuis ce réseau. Essaie en 4G/5G ou sur un autre Wi-Fi.'));}}});
+      c._f=0;return c;});
+    const up=()=>cl.filter(c=>c&&c.connected);
+    const pub=()=>{const p=JSON.stringify(mine);up().forEach(c=>c.publish(base+id,p,{retain:true,qos:1}));};
+    let wasOff=false;setInterval(()=>{const n=up().length;if(done){if(!n&&!wasOff){wasOff=true;toast('Connexion perdue, reconnexion…');}else if(n&&wasOff){wasOff=false;toast('Reconnecté');pub();}}},2000);
     const api={mode:'mqtt',myId:id,
-      set(p){Object.assign(mine,JSON.parse(JSON.stringify(p)));states[id]={...mine};pub();fire();},
+      set(p){Object.assign(mine,JSON.parse(JSON.stringify(p)));mine._v=Date.now()*100+((mine._v%100)+1)%100;pub();fire();},
       on(f){cb=f;fire();},
-      leave(){try{c.publish(base+id,'',{retain:true,qos:1},()=>c.end(true));setTimeout(()=>c.end(true),800);}catch(_){}},
-      connected:()=>c.connected};
-    const to=setTimeout(()=>{if(!done){c.end(true);rej(new Error('Serveur de jeu injoignable. Vérifie ta connexion internet.'));}},10000);
-    c.on('connect',()=>{c.subscribe(base+'+',{qos:1});pub();if(!done){done=true;clearTimeout(to);res(api);}else toast('Reconnecté');});
-    c.on('offline',()=>{if(done)toast('Connexion perdue, reconnexion…');});
-    c.on('message',(topic,buf)=>{const k=topic.slice(base.length);if(k===id)return;const str=buf.toString();if(!str)delete states[k];else{try{states[k]=JSON.parse(str);}catch(_){}}fire();});
-    c.on('error',e=>{if(!done){done=true;clearTimeout(to);c.end(true);rej(new Error('Réseau : '+(e.message||e)));}});
+      leave(){cl.forEach(c=>{if(!c)return;try{c.publish(base+id,'',{retain:true,qos:1},()=>c.end(true));setTimeout(()=>c.end(true),800);}catch(_){}});},
+      connected:()=>up().length>0};
+    const to=setTimeout(()=>{if(!done){done=true;cl.forEach(c=>c&&c.end(true));rej(new Error('Serveur de jeu injoignable. Vérifie ta connexion internet.'));}},12000);
   });
 }
 function waitHost(net,ms){return new Promise(res=>{let ok=false;net.on(l=>{if(!ok&&l.some(p=>p.s.role==='host')){ok=true;res(true);}});setTimeout(()=>res(ok),ms);});}
@@ -486,7 +498,7 @@ async function join(){
   if(!saveName())return fail('Entre ton prénom d\'abord');
   const code=(document.getElementById('cd')?.value||'').trim().toUpperCase();if(code.length!==4)return fail('Le code fait 4 caractères');busy(true);
   try{const net=IN_CLAUDE()?await netRoom(code):await netMqtt(code);
-    if(!IN_CLAUDE()&&!(await waitHost(net,6000))){net.leave();throw new Error('Aucune table ouverte avec le code '+code+'. Vérifie le code, et que l\'hôte a bien l\'écran de la table ouvert.');}
+    if(!IN_CLAUDE()&&!(await waitHost(net,9000))){net.leave();throw new Error('Aucune table ouverte avec le code '+code+'. Vérifie le code, et que l\'hôte a bien l\'écran de la table ouvert.');}
     S.net=net;S.isHost=false;S.code=code;net.on(onPeers);net.set({name:NAME,role:'player'});}
   catch(e){return fail(e.message==='ROOM_NULL'?ROOMMSG:e.message||String(e));}
   S.err='';render(true);
